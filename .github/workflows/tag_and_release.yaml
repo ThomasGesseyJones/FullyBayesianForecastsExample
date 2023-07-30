@@ -1,0 +1,46 @@
+name: Tag_And_Release
+
+on:
+  pull_request:
+    branches: [main]
+    types:
+      - closed
+
+jobs:
+  tagging_release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip' # caching pip dependencies
+      - run: pip install packaging
+      - name: Get Version
+        id: tag-version
+        run: echo "tag_version=$(python3 ./bin/get_version.py)" >> $GITHUB_OUTPUT
+      - name: Print Version
+        env:
+          TAG: ${{ steps.tag-version.outputs.tag_version }}
+        run: echo "${{ steps.tag-version.outputs.tag_version }}"
+      - name: Create Tag
+        uses: actions/github-script@v6
+        env:
+          TAG: ${{ steps.tag-version.outputs.tag_version }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+           github.rest.git.createRef({
+             owner: context.repo.owner,
+             repo: context.repo.repo,
+             ref: "refs/tags/v${{ steps.tag-version.outputs.tag_version }}",
+             sha: context.sha})
+      - name: Create release if a full release
+        if: "!contains(steps.tag-version.outputs.tag_version, '-')"
+        uses: ncipollo/release-action@v1
+        with:
+          name: "${{  steps.tag-version.outputs.tag_version }}"
+          tag: "v${{ steps.tag-version.outputs.tag_version }}"
+          generateReleaseNotes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
