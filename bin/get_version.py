@@ -6,7 +6,7 @@ This script will print the version of the current project.
 
 
 import sys
-from check_version import run_on_commandline, readme_file, get_current_version
+from check_version import get_current_version
 
 
 def main():
