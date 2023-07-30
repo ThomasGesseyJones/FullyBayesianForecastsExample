@@ -5,9 +5,9 @@ Fully Bayesian Forecasts Example
 Introduction
 ------------
 
-:FullyBayesianForecastsExample: Affirmative error messages for Python
+:Name: FullyBayesianForecastsExample
 :Author: Thomas Gessey-Jones
-:Version: 0.0.0
+:Version: 0.0.1
 :Homepage: https://github.com/ThomasGesseyJones/FullyBayesianForecastsExample
 :Paper: TBD
 
