@@ -24,13 +24,13 @@ class EvidenceNetwork:
     simulator_0: Callable
         A function that will simulate mock data using model 0.
         The function should take the number of data sets to simulate as input,
-        and it should return the data as an array and any parameters of interest
-        as a pandas dataframe.
+        and it should return the data as an array and any parameters of
+        interest as a pandas dataframe.
     simulator_1: Callable
         A function that will simulate mock data using model 1
         The function should take the number of data sets to simulate as input,
-        and it should return the data as an array and any parameters of interest
-        as a pandas dataframe.
+        and it should return the data as an array and any parameters of
+        interest as a pandas dataframe.
 
     Attributes
     ----------
