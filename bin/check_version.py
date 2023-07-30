@@ -90,7 +90,7 @@ def main():
     current_version = get_current_version()
 
     # Get previous version from main branch of code
-    run_on_commandline("git", "fetch", "origin", "master")
+    run_on_commandline("git", "fetch", "origin", "main")
     readme_contents = run_on_commandline("git", "show",
                                          "remotes/origin/main:" +
                                          readme_file)
