@@ -1,4 +1,5 @@
 # Linting
+packaging == 23.1
 pre-commit == 3.3.2
 flake8 == 6.0.0
 pydocstyle == 6.3.0
@@ -10,3 +11,4 @@ numpy == 1.24.4
 keras == 2.10.0
 matplotlib == 3.7.1
 nvidia-cudnn-cu11 == 8.6.0.163
+pandas == 2.0.3
