@@ -4,11 +4,14 @@ Functions and classes to simulate the cosmological 21-cm signal.
 """
 
 # Required libraries
+from typing import Callable, Tuple
 from globalemu.downloads import download as globalemu_download
 from globalemu.eval import evaluate
 from tensorflow import keras
 import numpy as np
 import os
+from priors import generate_composite_prior_sampler
+from pandas import DataFrame
 
 
 # Globalemu parameters
@@ -91,3 +94,76 @@ def global_signal_experiment_measurement_redshifts(
     nus = min_nu + np.arange(num_bins)*freq_binning_mhz
     redshifts = FREQ_21CM_MHZ / nus - 1
     return redshifts
+
+
+# Simulators
+def generate_global_signal_simulator(
+        global_emu_predictor: evaluate,
+        f_star_sampler: Callable,
+        v_c_sampler: Callable,
+        f_x_sampler: Callable,
+        tau_sampler: Callable,
+        alpha_sampler: Callable,
+        nu_min_sampler: Callable,
+        r_mfp_sampler: Callable
+) -> Callable:
+    """Returns a simulator function for the global 21-cm signal.
+
+    Parameters
+    ----------
+    global_emu_predictor : evaluate object
+        The pre-trained globalemu 21-cm sky averaged signal emulator
+    f_star_sampler : Callable
+        Function that returns a sample of f_star
+    v_c_sampler : Callable
+        Function that returns a sample of v_c
+    f_x_sampler : Callable
+        Function that returns a sample of f_x
+    tau_sampler : Callable
+        Function that returns a sample of tau
+    alpha_sampler : Callable
+        Function that returns a sample of alpha
+    nu_min_sampler : Callable
+        Function that returns a sample of nu_min
+    r_mfp_sampler : Callable
+        Function that returns a sample of R_mfp
+
+    Returns
+    -------
+    signal_simulator : Callable
+        Function that takes a number of data simulations and returns
+        that number of global 21-cm signals (in K) as an array
+        plus the corresponding parameters as a dataframe.
+    """
+    # Generate the composite prior sampler
+    prior_sampler = generate_composite_prior_sampler(
+        f_star_sampler, v_c_sampler, f_x_sampler, tau_sampler,
+        alpha_sampler, nu_min_sampler, r_mfp_sampler)
+
+    # Define the simulator function
+    def signal_simulator(num_sims: int) -> Tuple[np.ndarray, DataFrame]:
+        """Simulate the global 21-cm signal.
+
+        Parameters
+        ----------
+        num_sims : int
+            The number of simulations to run
+
+        Returns
+        -------
+        signals : np.ndarray
+            The simulated global 21-cm signals (in K) as an array
+        parameters : DataFrame
+            The corresponding parameters as a dataframe.
+        """
+        # Sample the parameters
+        params = prior_sampler(num_sims)
+
+        # Run the simulator
+        signals = global_emu_predictor(params)[0]/1000  # mK -> K
+
+        # Convert params to DataFrame
+        params = DataFrame(params, columns=GLOBALEMU_INPUTS)
+
+        return signals, params
+    return signal_simulator
