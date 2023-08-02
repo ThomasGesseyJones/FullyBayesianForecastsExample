@@ -5,10 +5,10 @@ This module contains functions that generate noise simulators.
 
 # Import libraries
 from __future__ import annotations
-from typing import Callable, Tuple
+from typing import Tuple
 import numpy as np
-import pandas as pd
 from pandas import DataFrame
+from .core import Simulator
 
 
 # White noise
@@ -36,7 +36,7 @@ def white_noise(shape: np.ndarray | int, sigma_noise: float) -> np.ndarray:
 def generate_white_noise_simulator(
         noise_size: int,
         sigma_noise: int
-) -> Callable:
+) -> Simulator:
     """Returns a simulator function for white noise.
 
     Parameters

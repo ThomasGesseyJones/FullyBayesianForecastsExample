@@ -12,6 +12,7 @@ import numpy as np
 import os
 from priors import generate_composite_prior_sampler
 from pandas import DataFrame
+from .core import Simulator
 
 
 # Globalemu parameters
@@ -106,7 +107,7 @@ def generate_global_signal_simulator(
         alpha_sampler: Callable,
         nu_min_sampler: Callable,
         r_mfp_sampler: Callable
-) -> Callable:
+) -> Simulator:
     """Returns a simulator function for the global 21-cm signal.
 
     Parameters
