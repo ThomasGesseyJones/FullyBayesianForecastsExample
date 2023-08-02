@@ -1,0 +1,52 @@
+---
+# Configuration file for Fully Bayesian Forecast Example
+# ======================================================
+# This file mainly specifies information about the priors used and the
+# frequency resolution of the imagined global signal experiment.
+#
+# It is placed here to make it either easier to consistently change these
+# values or because they are used in multiple scripts.
+#
+#
+# FREQUENCY RESOLUTION
+# ====================
+# The frequency resolution of the experiment in MHz.
+frequency_resolution: 1.0
+#
+#
+# PRIORS
+# ======
+# The priors used for each of global emus parameters.
+# Each parameter has its own entry, specifying the prior type and the
+# parameters of the prior.
+priors:
+  f_star:
+    type: log_uniform
+    min: emu_min  # If given emu_min or emu_max, the value is taken from the
+    max: emu_max  # minimum or maximum value of GlobalEmu was trained on.
+  v_c:
+    type: log_uniform
+    min: emu_min
+    max: 30.0
+  f_x:
+    type: log_uniform
+    min: 1e-3
+    max: emu_max
+  tau:
+    type: truncated_gaussian
+    mean: 0.054
+    std: 0.007
+    min: emu_min
+    max: emu_max
+  alpha:
+    type: uniform
+    min: emu_min
+    max: emu_max
+  nu_min:
+    type: log_uniform
+    min: emu_min
+    max: emu_max
+  R_mfp:
+    type: uniform
+    min: emu_min
+    max: emu_max
