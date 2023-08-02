@@ -7,6 +7,7 @@ This module contains functions that generate noise simulators.
 from __future__ import annotations
 from typing import Callable, Tuple
 import numpy as np
+import pandas as pd
 from pandas import DataFrame
 
 
@@ -49,13 +50,13 @@ def generate_white_noise_simulator(
     -------
     noise_simulator : Callable
         Function that takes a number of data simulations and returns
-        the generate white noise data for each simulation as an array
-        and an empty tuple.
+        the generated white noise data for each simulation as an array
+        and an empty data frame.
     """
     def _noise_simulator(num_data_simulations: int
                          ) -> Tuple[np.ndarray, DataFrame]:
         """Simulator for a white noise model."""
-        noise = white_noise(np.array[num_data_simulations, noise_size],
+        noise = white_noise(np.array([num_data_simulations, noise_size]),
                             sigma_noise)
         return noise, DataFrame()
     return _noise_simulator
