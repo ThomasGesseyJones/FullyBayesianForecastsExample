@@ -37,7 +37,7 @@ def generate_white_noise_simulator(
         noise_size: int,
         sigma_noise: int
 ) -> Simulator:
-    """Returns a simulator function for white noise.
+    """Return a simulator function for white noise.
 
     Parameters
     ----------
@@ -55,7 +55,7 @@ def generate_white_noise_simulator(
     """
     def _noise_simulator(num_data_simulations: int
                          ) -> Tuple[np.ndarray, DataFrame]:
-        """Simulator for a white noise model."""
+        """Return a simulator for a white noise model."""
         noise = white_noise(np.array([num_data_simulations, noise_size]),
                             sigma_noise)
         return noise, DataFrame()

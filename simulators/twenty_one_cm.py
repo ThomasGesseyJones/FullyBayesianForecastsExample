@@ -108,7 +108,7 @@ def generate_global_signal_simulator(
         nu_min_sampler: Callable,
         r_mfp_sampler: Callable
 ) -> Simulator:
-    """Returns a simulator function for the global 21-cm signal.
+    """Return a simulator function for the global 21-cm signal.
 
     Parameters
     ----------
