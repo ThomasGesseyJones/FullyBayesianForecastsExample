@@ -210,7 +210,7 @@ class EvidenceNetwork:
         self.validation_data = validation_sample_data
         self.validation_labels = validation_labels_data
 
-        # Train model without early stopping
+        # Train model and set trained flag
         self.nn_model.fit(sample_data, labels_data,
                           batch_size=batch_size,
                           epochs=epochs,
