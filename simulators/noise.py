@@ -35,7 +35,7 @@ def white_noise(shape: np.ndarray | int, sigma_noise: float) -> np.ndarray:
 
 def generate_white_noise_simulator(
         noise_size: int,
-        sigma_noise: int
+        sigma_noise: float
 ) -> Simulator:
     """Return a simulator function for white noise.
 

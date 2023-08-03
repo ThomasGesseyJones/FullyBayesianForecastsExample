@@ -12,3 +12,4 @@ keras == 2.10.0
 matplotlib == 3.7.1
 nvidia-cudnn-cu11 == 8.6.0.163
 pandas == 2.0.3
+PyYAML == 6.0.1

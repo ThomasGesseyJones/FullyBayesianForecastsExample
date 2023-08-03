@@ -1,0 +1,26 @@
+# Fonts and Font Sizes
+axes.labelsize : 10
+legend.fontsize : 8
+xtick.labelsize : 8
+ytick.labelsize : 8
+text.usetex : True
+font.family : serif
+font.serif : cm
+
+# Figure Settings
+figure.figsize:     3.15, 2.36
+figure.subplot.left:   0.17  
+figure.subplot.right:  0.95    
+figure.subplot.bottom: 0.15   
+figure.subplot.top:    0.95 
+
+# Tick Settings
+xtick.direction:     in  
+ytick.direction:     in
+xtick.minor.visible: True
+ytick.minor.visible: True  
+
+# Line Settings
+lines.linewidth: 1.0  
+lines.linestyle: -  
+axes.prop_cycle: cycler('color' , ['377eb8', 'ff7f00', 'f781bf', '4daf4a', 'a65628', '984ea3','999999', 'e41a1c', 'dede00', '000000']) + cycler('linestyle',['-', '--',':', '-.','-','--',':', '-.','-', '--'])
