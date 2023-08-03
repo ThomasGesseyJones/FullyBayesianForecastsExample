@@ -29,6 +29,7 @@ from evidence_networks import EvidenceNetwork
 from copy import deepcopy
 import yaml
 import os
+import matplotlib.pyplot as plt
 
 
 # Parameters
@@ -150,6 +151,13 @@ def main():
     os.makedirs(network_folder, exist_ok=True)
     network_file = os.path.join(network_folder, "global_signal_en.h5")
     en.save(network_file)
+
+    # Perform blind coverage test
+    plt.style.use(os.path.join('figures', 'mnras_single.mplstyle'))
+    fig, ax = plt.subplots()
+    _ = en.blind_coverage_test(plotting_ax=ax, num_validation_samples=10_000)
+    fig.savefig(os.path.join('figures', 'blind_coverage_tests',
+                             f'en_noise_{sigma_noise:.4f}_blind_coverage.pdf'))
 
 
 if __name__ == "__main__":
