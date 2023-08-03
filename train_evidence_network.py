@@ -22,7 +22,7 @@ from simulators.twenty_one_cm import load_globalemu_emulator, \
     global_signal_experiment_measurement_redshifts, \
     generate_global_signal_simulator
 from priors import generate_uniform_prior_sampler, \
-    generate_log_uniform_prior_sampler,\
+    generate_log_uniform_prior_sampler, \
     generate_gaussian_prior_sampler, \
     generate_truncated_gaussian_prior_sampler
 from evidence_networks import EvidenceNetwork
