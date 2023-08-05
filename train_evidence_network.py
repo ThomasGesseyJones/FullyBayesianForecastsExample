@@ -13,9 +13,9 @@ noise sigma in K. The default is 0.025 K.
 """
 
 # Required imports
-from typing import Callable, Collection
+from typing import Callable, Collection, Tuple
 import argparse
-from simulators import additive_simulator_combiner
+from simulators import additive_simulator_combiner, Simulator
 from simulators.noise import generate_white_noise_simulator
 from simulators.twenty_one_cm import load_globalemu_emulator, \
     GLOBALEMU_INPUTS, GLOBALEMU_PARAMETER_RANGES, \
@@ -120,12 +120,27 @@ def create_globalemu_prior_samplers(config_dict: dict) -> Collection[Callable]:
     return individual_priors
 
 
-def main():
-    """Train the Evidence Network."""
-    # IO
-    sigma_noise = get_noise_sigma()
-    config_dict = load_configuration_dict()
+# Assemble simulators
+def assemble_simulators(
+        config_dict: dict,
+        sigma_noise: float
+) -> Tuple[Simulator, Simulator]:
+    """Assemble the simulator functions for the Evidence Network.
 
+    Parameters
+    ----------
+    config_dict : dict
+        Dictionary containing the configuration parameters.
+    sigma_noise : float
+        The noise sigma in K.
+
+    Returns
+    -------
+    noise_only_simulator : Simulator
+        Function that generates data from noise only model.
+    noisy_signal_simulator : Simulator
+        Function that generates data from noise + signal model.
+    """
     # Set-up globalemu
     globalemu_priors = create_globalemu_prior_samplers(config_dict)
     globalemu_redshifts = global_signal_experiment_measurement_redshifts(
@@ -141,6 +156,19 @@ def main():
         globalemu_predictor, *globalemu_priors)
     noisy_signal_simulator = additive_simulator_combiner(
         signal_simulator, noise_for_signal)
+
+    return noise_only_simulator, noisy_signal_simulator
+
+
+def main():
+    """Train the Evidence Network."""
+    # IO
+    sigma_noise = get_noise_sigma()
+    config_dict = load_configuration_dict()
+
+    # Set-up simulators
+    noise_only_simulator, noisy_signal_simulator = assemble_simulators(
+        config_dict, sigma_noise)
 
     # Create and train evidence network
     en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator)

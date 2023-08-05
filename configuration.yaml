@@ -50,3 +50,9 @@ priors:
     type: uniform
     min: emu_min
     max: emu_max
+#
+#
+# PLOTTING
+# ========
+# Parameters that control details of the plots used to visualise the results.
+br_evaluations_for_forecast: 1000000
