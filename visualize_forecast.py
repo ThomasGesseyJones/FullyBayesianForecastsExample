@@ -19,6 +19,7 @@ from typing import Collection
 from evidence_networks import EvidenceNetwork
 from train_evidence_network import get_noise_sigma, load_configuration_dict, \
     assemble_simulators
+from matplotlib.ticker import MaxNLocator
 import os
 import numpy as np
 from pandas import DataFrame
@@ -306,7 +307,14 @@ def detectability_corner_plot(
     # Further formatting
     fig.tight_layout()
 
-    # TODO: Add tick placements
+    # Set tickers to MaxNLocator
+    for row_idx in range(1, len(parameters_to_plot)):
+        ax = axes[row_idx, 0]
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=4, prune='both'))
+    for col_idx in range(len(parameters_to_plot)):
+        ax = axes[-1, col_idx]
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=4, prune='both'))
+
     # TODO: Manually enforced ranges
 
     # Add colorbar at the bottom of the figure
