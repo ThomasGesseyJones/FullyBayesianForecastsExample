@@ -48,6 +48,7 @@ def detectability_corner_plot(
         parameters_to_log: Collection[str] = None,
         line_kwargs: dict = None,
         pcolormesh_kwargs: dict = None,
+        plotting_ranges: dict[str, tuple[float, float]] = None
 ) -> plt.Figure:
     """Plot a fully Bayesian forecast of the detectability of a signal.
 
@@ -78,6 +79,12 @@ def detectability_corner_plot(
         Keyword arguments to pass to the on digonal line plots.
     pcolormesh_kwargs : dict, optional
         Keyword arguments to pass to the below diagonal pcolormesh plots.
+    plotting_ranges : dict[str, tuple[float, float]], optional
+        The plotting ranges for each parameter. If None or values not given
+        for a parameter, the plotting range is set to the minimum and maximum
+        of the parameter values. Note this range is only applied to the
+        visualisation and does not affect the detectability calculation, e.g.
+        the full range of the parameter is still used in the marginalisation.
 
     Returns
     -------
@@ -112,6 +119,9 @@ def detectability_corner_plot(
         parameter_labels = {}
     labels = [parameter_labels.get(param, param) for
               param in parameters_to_plot]
+
+    if plotting_ranges is None:
+        plotting_ranges = {}
 
     # Default line and pcolormesh kwargs
     if line_kwargs is None:
@@ -227,6 +237,22 @@ def detectability_corner_plot(
             # Get parameter values
             row_values = parameter_values[row_param].to_numpy()
             col_values = parameter_values[col_param].to_numpy()
+            relevant_detectable_values = detectable.copy()
+
+            # Trim to plotting ranges
+            for param, values in zip([row_param, col_param],
+                                     [row_values, col_values]):
+                if param in plotting_ranges:
+                    param_min, param_max = plotting_ranges[param]
+                    if param in parameters_to_log:
+                        param_min = np.log10(param_min)
+                        param_max = np.log10(param_max)
+                    in_param_range = np.logical_and(values >= param_min,
+                                                    values <= param_max)
+                    row_values = row_values[in_param_range]
+                    col_values = col_values[in_param_range]
+                    relevant_detectable_values = relevant_detectable_values[
+                        in_param_range]
 
             # Get parameter values
             row_bin_edges = np.linspace(
@@ -256,7 +282,7 @@ def detectability_corner_plot(
                     in_bin = np.logical_and(in_row_bin, in_col_bin)
 
                     # and if data set is detectable
-                    bin_detectable = detectable[in_bin]
+                    bin_detectable = relevant_detectable_values[in_bin]
 
                     # Combine to get detection probability
                     detection_probability[row_bin_idx, col_bin_idx] = np.mean(
@@ -272,6 +298,19 @@ def detectability_corner_plot(
     for idx, param in enumerate(parameters_to_plot):
         # Get parameter values
         diag_param_values = parameter_values[param].to_numpy()
+        relevant_detectable_values = detectable.copy()
+
+        # Trim to plotting ranges
+        if param in plotting_ranges:
+            param_min, param_max = plotting_ranges[param]
+            if param in parameters_to_log:
+                param_min = np.log10(param_min)
+                param_max = np.log10(param_max)
+            in_param_range = np.logical_and(diag_param_values >= param_min,
+                                            diag_param_values <= param_max)
+            diag_param_values = diag_param_values[in_param_range]
+            relevant_detectable_values = relevant_detectable_values[
+                in_param_range]
 
         # Get bins
         bin_edges = np.linspace(
@@ -288,7 +327,7 @@ def detectability_corner_plot(
                 diag_param_values < bin_edges[bin_idx + 1])
 
             # and if data sets are detectable
-            bin_detectable = detectable[in_bin]
+            bin_detectable = relevant_detectable_values[in_bin]
 
             # Determine detection probability
             detection_probability[bin_idx] = np.mean(bin_detectable)
@@ -314,8 +353,6 @@ def detectability_corner_plot(
     for col_idx in range(len(parameters_to_plot)):
         ax = axes[-1, col_idx]
         ax.xaxis.set_major_locator(MaxNLocator(nbins=4, prune='both'))
-
-    # TODO: Manually enforced ranges
 
     # Add colorbar at the bottom of the figure
     cbar = fig.colorbar(cmap, ax=axes.ravel().tolist(),
@@ -377,7 +414,8 @@ def main():
             signal_params,
             parameters_to_plot,
             default_parameter_labels,
-            parameters_to_log)
+            parameters_to_log,
+            plotting_ranges={'tau': (0.040, 0.075)})
         filename = os.path.join(
             "figures",
             "detectability_triangle_plots",
