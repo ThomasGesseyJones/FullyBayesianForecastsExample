@@ -56,3 +56,6 @@ priors:
 # ========
 # Parameters that control details of the plots used to visualise the results.
 br_evaluations_for_forecast: 1000000
+detection_thresholds: ["2 sigma", "3 sigma", "5 sigma"]
+parameters_to_plot: ["f_star", "v_c", "f_x", "tau"]
+parameters_to_log: ["f_star", "v_c", "f_x"]
