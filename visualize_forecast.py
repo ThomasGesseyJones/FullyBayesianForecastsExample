@@ -143,7 +143,7 @@ def detectability_corner_plot(
     if 'rasterized' not in pcolormesh_kwargs:
         pcolormesh_kwargs['rasterized'] = True
     if 'cmap' not in pcolormesh_kwargs:
-        pcolormesh_kwargs['cmap'] = 'magma'
+        pcolormesh_kwargs['cmap'] = 'cividis'
 
     # To avoid side effects copy the parameter values
     parameter_values = parameter_values.copy()
