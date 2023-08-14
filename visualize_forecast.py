@@ -18,13 +18,14 @@ from __future__ import annotations
 from typing import Collection
 from evidence_networks import EvidenceNetwork
 from train_evidence_network import get_noise_sigma, load_configuration_dict, \
-    assemble_simulators
+    assemble_simulators, timing_filename, add_timing_data
 from matplotlib.ticker import MaxNLocator
 import os
 import numpy as np
 from pandas import DataFrame
 import matplotlib.pyplot as plt
 from math import erf
+import time
 
 
 # Parameters
@@ -378,8 +379,10 @@ def main():
     # IO
     sigma_noise = get_noise_sigma()
     config_dict = load_configuration_dict()
+    timing_file = timing_filename(sigma_noise)
 
     # Set up simulators
+    start = time.time()
     noise_only_simulator, noisy_signal_simulator = assemble_simulators(
         config_dict, sigma_noise)
 
@@ -388,14 +391,21 @@ def main():
     network_folder = os.path.join("models", f'en_noise_{sigma_noise:.4f}')
     network_file = os.path.join(network_folder, "global_signal_en.h5")
     en.load(network_file)
+    end = time.time()
+    add_timing_data(timing_file, 'en_loading', end - start)
 
     # Generate mock data for forecast and evaluate log Bayes ratio
+    start = time.time()
     num_data_sets = config_dict["br_evaluations_for_forecast"]
     mock_data_w_signal, signal_params = \
         noisy_signal_simulator(num_data_sets)
     log_bayes_ratios = en.evaluate_log_bayes_ratio(mock_data_w_signal)
+    end = time.time()
+    add_timing_data(timing_file, 'en_fbf_log_k_evaluations',
+                    end - start)
 
     # Set-up plotting style and variables
+    start = time.time()
     plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
     plt.rcParams.update({'figure.figsize': (3.33, 3.33)})
     plt.rcParams.update({'ytick.labelsize': 6})
@@ -433,6 +443,13 @@ def main():
             f"noise_{sigma_noise:.4f}_K.pdf")
         fig.savefig(filename)
         plt.close(fig)
+
+    # Store timing data
+    end = time.time()
+    add_timing_data(timing_file, 'total_fbf_plotting',
+                    end - start)
+    add_timing_data(timing_file, 'average_fbf_plotting',
+                    (end - start)/len(detection_thresholds))
 
 
 if __name__ == "__main__":
