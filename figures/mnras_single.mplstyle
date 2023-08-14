@@ -8,7 +8,7 @@ font.family : serif
 font.serif : cm
 
 # Figure Settings
-figure.figsize:     3.15, 2.36
+figure.figsize:     3.33, 2.36
 figure.subplot.left:   0.17  
 figure.subplot.right:  0.95    
 figure.subplot.bottom: 0.15   

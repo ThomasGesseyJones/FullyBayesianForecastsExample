@@ -18,38 +18,39 @@ frequency_resolution: 1.0
 # ======
 # The priors used for each of global emus parameters.
 # Each parameter has its own entry, specifying the prior type and the
-# parameters of the prior.
+# parameters of the prior. low and high are used in place of min and
+# max to avoid clashing with python keywords.
 priors:
   f_star:
     type: log_uniform
-    min: emu_min  # If given emu_min or emu_max, the value is taken from the
-    max: emu_max  # minimum or maximum value of GlobalEmu was trained on.
+    low: emu_min   # If given emu_min or emu_max, the value is taken from the
+    high: emu_max  # minimum or maximum value of GlobalEmu was trained on.
   v_c:
     type: log_uniform
-    min: emu_min
-    max: 30.0
+    low: emu_min
+    high: 30.0
   f_x:
     type: log_uniform
-    min: 1e-3
-    max: emu_max
+    low: 0.001
+    high: emu_max
   tau:
     type: truncated_gaussian
     mean: 0.054
     std: 0.007
-    min: emu_min
-    max: emu_max
+    low: emu_min
+    high: emu_max
   alpha:
     type: uniform
-    min: emu_min
-    max: emu_max
+    low: emu_min
+    high: emu_max
   nu_min:
     type: log_uniform
-    min: emu_min
-    max: emu_max
+    low: emu_min
+    high: emu_max
   R_mfp:
     type: uniform
-    min: emu_min
-    max: emu_max
+    low: emu_min
+    high: emu_max
 #
 #
 # PLOTTING
@@ -57,5 +58,5 @@ priors:
 # Parameters that control details of the plots used to visualise the results.
 br_evaluations_for_forecast: 1000000
 detection_thresholds: ["2 sigma", "3 sigma", "5 sigma"]
-parameters_to_plot: ["f_star", "v_c", "f_x", "tau"]
-parameters_to_log: ["f_star", "v_c", "f_x"]
+parameters_to_plot: ["f_star", "f_x", "tau"]
+parameters_to_log: ["f_star", "f_x"]

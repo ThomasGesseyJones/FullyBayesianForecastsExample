@@ -77,7 +77,7 @@ class EvidenceNetwork:
         # Set attributes
         self.simulator_0 = simulator_0
         self.simulator_1 = simulator_1
-        self._data_shape = sample_data_0.shape
+        self._data_size = sample_data_0.size
         self.trained = False
 
         # Attributes to be defined later
@@ -103,7 +103,7 @@ class EvidenceNetwork:
         keras.Model
             The default neural network model
         """
-        inputs = layers.Input(shape=input_size)
+        inputs = layers.Input(shape=(input_size,))
         x = layers.Dense(130)(inputs)
         x = layers.LeakyReLU()(x)
         x = layers.BatchNormalization()(x)
@@ -183,7 +183,7 @@ class EvidenceNetwork:
         """
         # Set-up NN, default from arXiv:2305.11241 appendix if not given
         if nn_model is None:
-            nn_model = self.default_nn_model(self._data_shape)
+            nn_model = self.default_nn_model(self._data_size)
         self.nn_model = nn_model
 
         # Compile model, using details from arXiv:2305.11241
@@ -278,7 +278,9 @@ class EvidenceNetwork:
         filename: str
             The filename to load the network from.
         """
-        self.nn_model = keras.models.load_model(filename)
+        self.nn_model = keras.models.load_model(
+            filename,
+            custom_objects={'l_pop_exponential_loss': l_pop_exponential_loss})
         self.trained = True
 
     def blind_coverage_test(self,
