@@ -145,6 +145,9 @@ def detectability_corner_plot(
     if 'cmap' not in pcolormesh_kwargs:
         pcolormesh_kwargs['cmap'] = 'inferno'
 
+    # To avoid side effects copy the parameter values
+    parameter_values = parameter_values.copy()
+
     # Change to Log parameters
     if parameters_to_log is not None:
         for param in parameters_to_log:
