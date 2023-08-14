@@ -190,7 +190,8 @@ def main():
                              f'en_noise_{sigma_noise:.4f}_blind_coverage.pdf'))
 
     # Verification evaluations for comparison with other methods
-    data, labels = en.get_simulated_data(50)
+    verification_ds_per_model = config_dict['verification_data_sets_per_model']
+    data, labels = en.get_simulated_data(verification_ds_per_model)
     log_bayes_ratios = en.evaluate_log_bayes_ratio(data)
     os.makedirs('verification_data', exist_ok=True)
     np.savez(os.path.join('verification_data',

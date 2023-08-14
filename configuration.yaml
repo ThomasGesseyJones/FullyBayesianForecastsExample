@@ -53,6 +53,14 @@ priors:
     high: emu_max
 #
 #
+# VERIFICATION
+# ============
+# Number of data sets generate from each model to use when verifying the
+# network against PolyChord. Each method is used to evaluate log K and then
+# the results are compared.
+verification_data_sets_per_model: 50
+#
+#
 # PLOTTING
 # ========
 # Parameters that control details of the plots used to visualise the results.
