@@ -259,12 +259,10 @@ def detectability_corner_plot(
             row_bin_edges = np.linspace(
                 np.min(row_values), np.max(row_values),
                 parameter_resolution + 1)
-            row_bin_centers = (row_bin_edges[:-1] + row_bin_edges[1:]) / 2
 
             col_bin_edges = np.linspace(
                 np.min(col_values), np.max(col_values),
                 parameter_resolution + 1)
-            col_bin_centers = (col_bin_edges[:-1] + col_bin_edges[1:]) / 2
 
             # Loop over bins determining detection probability
             detection_probability = np.zeros((parameter_resolution,
@@ -291,7 +289,7 @@ def detectability_corner_plot(
 
             # Plot
             ax = axes[row_idx, col_idx]
-            x_mesh, y_mesh = np.meshgrid(col_bin_centers, row_bin_centers)
+            x_mesh, y_mesh = np.meshgrid(col_bin_edges, row_bin_edges)
             cmap = ax.pcolormesh(x_mesh, y_mesh, detection_probability,
                                  **pcolormesh_kwargs)
 
