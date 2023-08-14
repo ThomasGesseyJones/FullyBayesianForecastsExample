@@ -399,6 +399,7 @@ def main():
     plt.rcParams.update({'ytick.labelsize': 6})
     plt.rcParams.update({'xtick.labelsize': 6})
     plt.rcParams.update({'axes.labelsize': 6})
+    plt.rcParams.update({'figure.subplot.bottom': 0.05})
 
     detection_thresholds = config_dict["detection_thresholds"]
     if not isinstance(detection_thresholds, list):
