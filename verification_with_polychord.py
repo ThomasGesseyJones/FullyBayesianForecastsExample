@@ -31,6 +31,7 @@ from pypolychord import PolyChordSettings, run_polychord
 from pypolychord.priors import UniformPrior, GaussianPrior, LogUniformPrior
 from copy import deepcopy
 from scipy.stats import truncnorm
+import matplotlib.pyplot as plt
 
 # Parameters
 CHAIN_DIR = "chains"
@@ -271,8 +272,47 @@ def main():
         log_bayes_ratio = log_z_noisy_signal - log_z_noise_only
         pc_log_bayes_ratios.append(log_bayes_ratio)
 
-    print(en_log_bayes_ratios)
-    print(pc_log_bayes_ratios)
+    # Clean up now finished
+    try:
+        shutil.rmtree(settings.base_dir)
+    except OSError:
+        pass
+
+    # Save PolyChord log bayes ratios if needed for later comparison
+    pc_log_bayes_ratios = np.array(pc_log_bayes_ratios)
+    polychord_data_file = (
+        os.path.join('verification_data',
+                     f'noise_{sigma_noise:.4f}_polychord_log_z.npz'))
+    np.savez(polychord_data_file, log_bayes_ratios=pc_log_bayes_ratios)
+
+    # Print results, mean difference and rmse error in log Z
+    error = en_log_bayes_ratios - pc_log_bayes_ratios
+    print(f"Mean log Z difference: {np.mean(error):.4f}")
+    print(f"RMSE in log Z: {np.sqrt(np.mean(error**2)):.4f}")
+
+    # Plot results
+    plt.style.use(os.path.join('figures', 'mnras_single.mplstyle'))
+    fig, ax = plt.subplots()
+    ax.scatter(en_log_bayes_ratios, pc_log_bayes_ratios, c='C0')
+    min_log_z = np.min([np.min(en_log_bayes_ratios),
+                        np.min(pc_log_bayes_ratios)])
+    max_log_z = np.max([np.max(en_log_bayes_ratios),
+                        np.max(pc_log_bayes_ratios)])
+    ax.plot([min_log_z, max_log_z], [min_log_z, max_log_z], c='k', ls='--')
+    ax.set_xlabel(r'$\log Z_{\rm EN}$')
+    ax.set_ylabel(r'$\log Z_{\rm PolyChord}$')
+
+    # Save figure
+    fig.tight_layout()
+    os.makedirs(os.path.join("figures",
+                             "polychord_verification"), exist_ok=True)
+    filename = os.path.join(
+        "figures",
+        "polychord_verification",
+        f"polychord_verification_"
+        f"en_noise_{sigma_noise:.4f}_K.pdf")
+    fig.savefig(filename)
+    plt.close(fig)
 
 
 if __name__ == "__main__":
