@@ -143,7 +143,7 @@ def detectability_corner_plot(
     if 'rasterized' not in pcolormesh_kwargs:
         pcolormesh_kwargs['rasterized'] = True
     if 'cmap' not in pcolormesh_kwargs:
-        pcolormesh_kwargs['cmap'] = 'inferno'
+        pcolormesh_kwargs['cmap'] = 'magma'
 
     # To avoid side effects copy the parameter values
     parameter_values = parameter_values.copy()
@@ -394,12 +394,12 @@ def main():
     # Set-up plotting style and variables
     plt.style.use(os.path.join('figures', 'mnras_single.mplstyle'))
     plt.rcParams.update({'figure.figsize': (3.15, 3.15)})
-    plt.rcParams.update({'ytick.labelsize': 5})
-    plt.rcParams.update({'xtick.labelsize': 5})
-    plt.rcParams.update({'axes.labelsize': 5})
+    plt.rcParams.update({'ytick.labelsize': 4})
+    plt.rcParams.update({'xtick.labelsize': 4})
+    plt.rcParams.update({'axes.labelsize': 4})
     plt.rcParams.update({'figure.titlesize': 8})
     plt.rcParams.update({'figure.subplot.bottom': 0.08})
-    plt.rcParams.update({'figure.subplot.right': 0.92})
+    plt.rcParams.update({'figure.subplot.right': 0.88})
     plt.rcParams.update({'figure.subplot.top': 0.92})
     plt.rcParams.update({'figure.subplot.left': 0.14})
 
