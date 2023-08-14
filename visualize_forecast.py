@@ -365,6 +365,10 @@ def detectability_corner_plot(
     cbar.set_ticklabels([rf"{tick * 100:.0f}\%" for tick in
                          cbar.get_ticks()])
 
+    # Rotate x tick labels for bottom row, to avoid overlap
+    for ax in axes[-1, :]:
+        ax.tick_params(axis='x', labelrotation=90)
+
     # Return the figure handle
     return fig
 
