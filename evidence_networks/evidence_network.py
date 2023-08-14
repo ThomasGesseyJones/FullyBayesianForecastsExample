@@ -279,7 +279,7 @@ class EvidenceNetwork:
             The filename to load the network from.
         """
         self.nn_model = keras.models.load_model(
-            filename,  
+            filename,
             custom_objects={'l_pop_exponential_loss': l_pop_exponential_loss})
         self.trained = True
 
