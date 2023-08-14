@@ -362,11 +362,8 @@ def detectability_corner_plot(
 
     # Convert colorbar ticks to percentages
     cbar.set_ticks(np.linspace(0, 1, 6))
-    cbar.set_ticklabels([rf"{tick * 100}%" for tick in
+    cbar.set_ticklabels([rf"{tick * 100}\%" for tick in
                          cbar.get_ticks()])
-
-    # Further formatting
-    fig.tight_layout()
 
     # Return the figure handle
     return fig
