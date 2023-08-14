@@ -285,10 +285,25 @@ def main():
                      f'noise_{sigma_noise:.4f}_polychord_log_z.npz'))
     np.savez(polychord_data_file, log_bayes_ratios=pc_log_bayes_ratios)
 
+    # Create output directory for results of comparison
+    os.makedirs(os.path.join("figures",
+                             "polychord_verification"), exist_ok=True)
+    numeric_results_filename = os.path.join(
+        "figures",
+        "polychord_verification",
+        f"polychord_verification_"
+        f"en_noise_{sigma_noise:.4f}_K_results.txt")
+    numeric_results_file = open(numeric_results_filename, 'w')
+
     # Print results, mean difference and rmse error in log Z
+    numeric_results_file.write('Polychord Verification Results\n')
+    numeric_results_file.write('-----------------------------\n\n')
     error = en_log_bayes_ratios - pc_log_bayes_ratios
-    print(f"Mean log Z difference: {np.mean(error):.4f}")
-    print(f"RMSE in log Z: {np.sqrt(np.mean(error**2)):.4f}")
+    numeric_results_file.write(f"Mean log Z error: "
+                               f"{np.mean(error):.4f}\n")
+    numeric_results_file.write(f"RMSE in log Z: "
+                               f"{np.sqrt(np.mean(error**2)):.4f}\n")
+    numeric_results_file.close()
 
     # Plot results
     plt.style.use(os.path.join('figures', 'mnras_single.mplstyle'))
@@ -304,8 +319,6 @@ def main():
 
     # Save figure
     fig.tight_layout()
-    os.makedirs(os.path.join("figures",
-                             "polychord_verification"), exist_ok=True)
     filename = os.path.join(
         "figures",
         "polychord_verification",
