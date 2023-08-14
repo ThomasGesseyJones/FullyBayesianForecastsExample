@@ -234,6 +234,7 @@ def main():
 
     # Loop over data using Polychord to evaluate the evidence
     pc_log_bayes_ratios = []
+    settings = None
     for data in v_data:
         # Can find noise only evidence analytically
         log_z_noise_only = noise_only_log_evidence(data, sigma_noise)
