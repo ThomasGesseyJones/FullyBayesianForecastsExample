@@ -213,7 +213,7 @@ def detectability_corner_plot(
             ax.set_ylabel('')
 
         ax = axes[-1, row]
-        ax.set_xlabel(label)
+        ax.set_xlabel(label, labelpad=-2)
 
     # Align said labels
     fig.align_ylabels(axes[:, 0])
