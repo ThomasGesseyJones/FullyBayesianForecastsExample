@@ -52,7 +52,8 @@ def get_noise_sigma() -> float:
         "noise",
         type=float,
         default=NOISE_DEFAULT,
-        help="The noise sigma in K."
+        help="The noise sigma in K.",
+        nargs='?'
     )
     args = parser.parse_args()
     return args.noise
