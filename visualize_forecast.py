@@ -345,9 +345,6 @@ def detectability_corner_plot(
                    color=cmap.get_cmap()(total_detection_probability),
                    linestyle='--', linewidth=0.5, zorder=-1, alpha=0.5)
 
-    # Further formatting
-    fig.tight_layout()
-
     # Set tickers to MaxNLocator
     for row_idx in range(1, len(parameters_to_plot)):
         ax = axes[row_idx, 0]
@@ -367,6 +364,9 @@ def detectability_corner_plot(
     cbar.set_ticks(np.linspace(0, 1, 6))
     cbar.set_ticklabels(["{:.0f}%".format(tick * 100) for tick in
                          cbar.get_ticks()])
+
+    # Further formatting
+    fig.tight_layout()
 
     # Return the figure handle
     return fig
