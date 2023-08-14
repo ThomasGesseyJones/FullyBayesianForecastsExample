@@ -219,6 +219,7 @@ def detectability_corner_plot(
 
     # Determine which signals are detectable
     detectable = log_bayes_ratios > detection_threshold
+    detectable = detectable.numpy()
 
     # Set figure title to the total detection probability
     total_detection_probability = np.mean(detectable)
