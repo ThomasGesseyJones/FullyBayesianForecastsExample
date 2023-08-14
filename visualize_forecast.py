@@ -143,7 +143,10 @@ def detectability_corner_plot(
     if 'rasterized' not in pcolormesh_kwargs:
         pcolormesh_kwargs['rasterized'] = True
     if 'cmap' not in pcolormesh_kwargs:
-        pcolormesh_kwargs['cmap'] = 'inferno'
+        pcolormesh_kwargs['cmap'] = 'viridis'
+
+    # To avoid side effects copy the parameter values
+    parameter_values = parameter_values.copy()
 
     # Change to Log parameters
     if parameters_to_log is not None:
@@ -210,7 +213,7 @@ def detectability_corner_plot(
             ax.set_ylabel('')
 
         ax = axes[-1, row]
-        ax.set_xlabel(label)
+        ax.set_xlabel(label, labelpad=-1)
 
     # Align said labels
     fig.align_ylabels(axes[:, 0])
@@ -219,6 +222,7 @@ def detectability_corner_plot(
 
     # Determine which signals are detectable
     detectable = log_bayes_ratios > detection_threshold
+    detectable = detectable.numpy()
 
     # Set figure title to the total detection probability
     total_detection_probability = np.mean(detectable)
@@ -258,12 +262,10 @@ def detectability_corner_plot(
             row_bin_edges = np.linspace(
                 np.min(row_values), np.max(row_values),
                 parameter_resolution + 1)
-            row_bin_centers = (row_bin_edges[:-1] + row_bin_edges[1:]) / 2
 
             col_bin_edges = np.linspace(
                 np.min(col_values), np.max(col_values),
                 parameter_resolution + 1)
-            col_bin_centers = (col_bin_edges[:-1] + col_bin_edges[1:]) / 2
 
             # Loop over bins determining detection probability
             detection_probability = np.zeros((parameter_resolution,
@@ -290,7 +292,7 @@ def detectability_corner_plot(
 
             # Plot
             ax = axes[row_idx, col_idx]
-            x_mesh, y_mesh = np.meshgrid(col_bin_centers, row_bin_centers)
+            x_mesh, y_mesh = np.meshgrid(col_bin_edges, row_bin_edges)
             cmap = ax.pcolormesh(x_mesh, y_mesh, detection_probability,
                                  **pcolormesh_kwargs)
 
@@ -343,9 +345,6 @@ def detectability_corner_plot(
                    color=cmap.get_cmap()(total_detection_probability),
                    linestyle='--', linewidth=0.5, zorder=-1, alpha=0.5)
 
-    # Further formatting
-    fig.tight_layout()
-
     # Set tickers to MaxNLocator
     for row_idx in range(1, len(parameters_to_plot)):
         ax = axes[row_idx, 0]
@@ -363,8 +362,12 @@ def detectability_corner_plot(
 
     # Convert colorbar ticks to percentages
     cbar.set_ticks(np.linspace(0, 1, 6))
-    cbar.set_ticklabels(["{:.0f}%".format(tick * 100) for tick in
+    cbar.set_ticklabels([rf"{tick * 100:.0f}\%" for tick in
                          cbar.get_ticks()])
+
+    # Rotate x tick labels for bottom row, to avoid overlap
+    for ax in axes[-1, :]:
+        ax.tick_params(axis='x', labelrotation=50)
 
     # Return the figure handle
     return fig
@@ -394,9 +397,15 @@ def main():
 
     # Set-up plotting style and variables
     plt.style.use(os.path.join('figures', 'mnras_single.mplstyle'))
+    plt.rcParams.update({'figure.figsize': (3.33, 3.33)})
     plt.rcParams.update({'ytick.labelsize': 6})
     plt.rcParams.update({'xtick.labelsize': 6})
     plt.rcParams.update({'axes.labelsize': 6})
+    plt.rcParams.update({'figure.titlesize': 8})
+    plt.rcParams.update({'figure.subplot.bottom': 0.08})
+    plt.rcParams.update({'figure.subplot.right': 0.88})
+    plt.rcParams.update({'figure.subplot.top': 0.92})
+    plt.rcParams.update({'figure.subplot.left': 0.14})
 
     detection_thresholds = config_dict["detection_thresholds"]
     if not isinstance(detection_thresholds, list):
