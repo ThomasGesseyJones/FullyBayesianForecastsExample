@@ -183,10 +183,10 @@ def main():
     en.save(network_file)
 
     # Perform blind coverage test
-    plt.style.use(os.path.join('figures', 'mnras_single.mplstyle'))
+    plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
     fig, ax = plt.subplots()
     _ = en.blind_coverage_test(plotting_ax=ax, num_validation_samples=10_000)
-    fig.savefig(os.path.join('figures', 'blind_coverage_tests',
+    fig.savefig(os.path.join('figures_and_results', 'blind_coverage_tests',
                              f'en_noise_{sigma_noise:.4f}_blind_coverage.pdf'))
 
     # Verification evaluations for comparison with other methods

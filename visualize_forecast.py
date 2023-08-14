@@ -396,7 +396,7 @@ def main():
     log_bayes_ratios = en.evaluate_log_bayes_ratio(mock_data_w_signal)
 
     # Set-up plotting style and variables
-    plt.style.use(os.path.join('figures', 'mnras_single.mplstyle'))
+    plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
     plt.rcParams.update({'figure.figsize': (3.33, 3.33)})
     plt.rcParams.update({'ytick.labelsize': 6})
     plt.rcParams.update({'xtick.labelsize': 6})
@@ -414,7 +414,7 @@ def main():
     parameters_to_log = config_dict["parameters_to_log"]
 
     # Plotting
-    os.makedirs(os.path.join("figures",
+    os.makedirs(os.path.join("figures_and_results",
                              "detectability_triangle_plots"), exist_ok=True)
     for detection_threshold in detection_thresholds:
         fig = detectability_corner_plot(
@@ -426,7 +426,7 @@ def main():
             parameters_to_log,
             plotting_ranges={'tau': (0.040, 0.075)})
         filename = os.path.join(
-            "figures",
+            "figures_and_results",
             "detectability_triangle_plots",
             f"detectability_triangle_"
             f"{str(detection_threshold).replace(' ', '_')}_"
