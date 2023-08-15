@@ -27,6 +27,7 @@ from simulators.twenty_one_cm import load_globalemu_emulator, \
     GLOBALEMU_PARAMETER_RANGES
 import os
 import shutil
+from mpi4py import MPI  # noqa: F401
 import numpy as np
 from pypolychord import PolyChordSettings, run_polychord
 from pypolychord.priors import UniformPrior, GaussianPrior, LogUniformPrior
@@ -237,6 +238,7 @@ def main():
 
     # Loop over data using Polychord to evaluate the evidence
     pc_log_bayes_ratios = []
+    pc_nlike = []
     settings = None
     start = time.time()
     for data in v_data:
@@ -276,6 +278,7 @@ def main():
         # Compute log bayes ratio
         log_bayes_ratio = log_z_noisy_signal - log_z_noise_only
         pc_log_bayes_ratios.append(log_bayes_ratio)
+        pc_nlike.append(output.nlike)
 
     # Record timing data
     end = time.time()
@@ -307,14 +310,23 @@ def main():
         f"en_noise_{sigma_noise:.4f}_K_results.txt")
     numeric_results_file = open(numeric_results_filename, 'w')
 
-    # Print results, mean difference and rmse error in log Z
+    # Print results
     numeric_results_file.write('Polychord Verification Results\n')
     numeric_results_file.write('-----------------------------\n\n')
+
+    # Mean difference and rmse error in log Z
     error = en_log_bayes_ratios - pc_log_bayes_ratios
     numeric_results_file.write(f"Mean log Z error: "
                                f"{np.mean(error):.4f}\n")
     numeric_results_file.write(f"RMSE in log Z: "
                                f"{np.sqrt(np.mean(error**2)):.4f}\n")
+
+    # And mean and total number of live point
+    pc_nlike = np.array(pc_nlike)
+    numeric_results_file.write(f"Mean number of likelihood evaluations: "
+                               f"{np.mean(pc_nlike):.4f}\n")
+    numeric_results_file.write(f"Total number of likelihood evaluations: "
+                               f"{np.sum(pc_nlike):.4f}\n")
     numeric_results_file.close()
 
     # Plot results
