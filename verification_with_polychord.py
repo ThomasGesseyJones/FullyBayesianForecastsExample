@@ -26,7 +26,7 @@ from simulators.twenty_one_cm import load_globalemu_emulator, \
     GLOBALEMU_PARAMETER_RANGES
 import os
 import shutil
-from mpi4py import MPI
+from mpi4py import MPI  # noqa: F401
 import numpy as np
 from pypolychord import PolyChordSettings, run_polychord
 from pypolychord.priors import UniformPrior, GaussianPrior, LogUniformPrior
