@@ -355,6 +355,8 @@ def main():
     ax.plot([min_log_z, max_log_z], [min_log_z, max_log_z], c='k', ls='--')
     ax.set_xlabel(r'$\log K_{\rm EN}$')
     ax.set_ylabel(r'$\log K_{\rm PolyChord}$')
+    ax.set_xlim(-15, 30)
+    ax.set_ylim(-15, 30)
 
     # Save figure
     fig.tight_layout()
