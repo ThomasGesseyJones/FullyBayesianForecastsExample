@@ -349,25 +349,30 @@ def main():
     plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
     fig, ax = plt.subplots()
     ax.scatter(en_log_bayes_ratios, pc_log_bayes_ratios, c='C0',
-               s=1, marker='x')
+               s=2, marker='x', zorder=1)
     min_log_z = np.min([np.min(en_log_bayes_ratios),
                         np.min(pc_log_bayes_ratios)])
     max_log_z = np.max([np.max(en_log_bayes_ratios),
                         np.max(pc_log_bayes_ratios)])
-    ax.plot([min_log_z, max_log_z], [min_log_z, max_log_z], c='k', ls='--')
+    ax.plot([min_log_z, max_log_z], [min_log_z, max_log_z], c='k', ls='--',
+            zorder=0)
     ax.set_xlabel(r'$\log K_{\rm EN}$')
     ax.set_ylabel(r'$\log K_{\rm PolyChord}$')
     ax.set_xlim(-15, 30)
     ax.set_ylim(-15, 30)
 
     # Add lines at 2, 3 and 5 sigma to guide the eye as to where we need
-    # the network to be accurate
-    for detection_sigma in [2, 3, 5]:
+    # the network to be accurate, coloured using default matplotlib
+    # colour cycle skipping the first colour
+    prop_cycle = plt.rcParams['axes.prop_cycle']
+    colors = prop_cycle.by_key()['color'][1:]
+    for detection_sigma, c in zip([2, 3, 5], colors):
         probability = (1 + erf(detection_sigma / np.sqrt(2)) - 1)
         inv_probability = 1 - probability
         detection_threshold = np.log(probability / inv_probability)
         ax.axvline(detection_threshold, ls=':',
-                   zorder=-1, label=rf'{detection_sigma}$\sigma$')
+                   zorder=-1, label=rf'{detection_sigma}$\sigma$',
+                   c=c)
     ax.legend()
 
     # Save figure
