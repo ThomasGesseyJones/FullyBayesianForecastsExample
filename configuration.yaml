@@ -58,7 +58,7 @@ priors:
 # Number of data sets generate from each model to use when verifying the
 # network against PolyChord. Each method is used to evaluate log K and then
 # the results are compared.
-verification_data_sets_per_model: 50
+verification_data_sets_per_model: 100
 #
 #
 # PLOTTING
