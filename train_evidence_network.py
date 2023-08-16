@@ -247,7 +247,7 @@ def main():
     start = time.time()
     plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
     fig, ax = plt.subplots()
-    _ = en.blind_coverage_test(plotting_ax=ax, num_validation_samples=10_000)
+    _ = en.blind_coverage_test(plotting_ax=ax, num_validation_samples=100_000)
     figure_folder = os.path.join('figures_and_results', 'blind_coverage_tests')
     os.makedirs(figure_folder, exist_ok=True)
     fig.savefig(os.path.join(figure_folder,
