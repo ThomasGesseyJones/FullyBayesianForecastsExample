@@ -13,7 +13,7 @@ It is recommended to run this script on a CPU since PolyChord does not
 derive any benefit from GPUs.
 
 The script can take an optional command line argument to specify the
-noise sigma in K. The default is 0.025 K. This indicates the evidence
+noise sigma in K. The default is 0.079 K. This indicates the evidence
 network to use for the comparison.
 """
 
