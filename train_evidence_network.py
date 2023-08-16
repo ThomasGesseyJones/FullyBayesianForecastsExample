@@ -266,7 +266,9 @@ def main():
     os.makedirs('verification_data', exist_ok=True)
     np.savez(os.path.join('verification_data',
                           f'noise_{sigma_noise:.4f}_verification_data.npz'),
-             data=data, labels=labels, log_bayes_ratios=log_bayes_ratios)
+             data=np.squeeze(data),
+             labels=np.squeeze(labels),
+             log_bayes_ratios=np.squeeze(log_bayes_ratios))
 
 
 if __name__ == "__main__":
