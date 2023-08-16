@@ -116,8 +116,11 @@ def add_timing_data(timing_file: str, entry_name: str, time_s: float):
     time_s : float
         The time to add in seconds.
     """
-    with open(timing_file, 'rb') as file:
-        timing_data = pkl.load(file)
+    if os.path.isfile(timing_file):
+        with open(timing_file, 'rb') as file:
+            timing_data = pkl.load(file)
+    else:
+        timing_data = {}
     timing_data[entry_name] = time_s
     with open(timing_file, 'wb') as file:
         pkl.dump(timing_data, file)
@@ -245,7 +248,9 @@ def main():
     plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
     fig, ax = plt.subplots()
     _ = en.blind_coverage_test(plotting_ax=ax, num_validation_samples=10_000)
-    fig.savefig(os.path.join('figures_and_results', 'blind_coverage_tests',
+    figure_folder = os.path.join('figures_and_results', 'blind_coverage_tests')
+    os.makedirs(figure_folder, exist_ok=True)
+    fig.savefig(os.path.join(figure_folder,
                              f'en_noise_{sigma_noise:.4f}_blind_coverage.pdf'))
     end = time.time()
     add_timing_data(timing_file, 'bct', end - start)

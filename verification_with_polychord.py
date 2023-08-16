@@ -316,10 +316,10 @@ def main():
     np.savez(polychord_data_file, log_bayes_ratios=pc_log_bayes_ratios)
 
     # Create output directory for results of comparison
-    os.makedirs(os.path.join("figures",
+    os.makedirs(os.path.join("figures_and_results",
                              "polychord_verification"), exist_ok=True)
     numeric_results_filename = os.path.join(
-        "figures",
+        "figures_and_results",
         "polychord_verification",
         f"polychord_verification_"
         f"en_noise_{sigma_noise:.4f}_K_results.txt")
@@ -345,7 +345,7 @@ def main():
     numeric_results_file.close()
 
     # Plot results
-    plt.style.use(os.path.join('figures', 'mnras_single.mplstyle'))
+    plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
     fig, ax = plt.subplots()
     ax.scatter(en_log_bayes_ratios, pc_log_bayes_ratios, c='C0')
     min_log_z = np.min([np.min(en_log_bayes_ratios),
@@ -359,7 +359,7 @@ def main():
     # Save figure
     fig.tight_layout()
     filename = os.path.join(
-        "figures",
+        "figures_and_results",
         "polychord_verification",
         f"polychord_verification_"
         f"en_noise_{sigma_noise:.4f}_K.pdf")
