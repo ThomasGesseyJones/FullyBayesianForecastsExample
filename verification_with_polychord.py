@@ -26,7 +26,7 @@ from simulators.twenty_one_cm import load_globalemu_emulator, \
     GLOBALEMU_PARAMETER_RANGES
 import os
 import shutil
-from mpi4py import MPI 
+from mpi4py import MPI
 import numpy as np
 from pypolychord import PolyChordSettings, run_polychord
 from pypolychord.priors import UniformPrior, GaussianPrior, LogUniformPrior
@@ -233,7 +233,7 @@ def main():
 
     # Generate priors
     prior = generate_prior(config_dict)
-    
+
     if rank == 0:
         # Make sure chains directory exists
         os.makedirs(CHAIN_DIR, exist_ok=True)
@@ -241,7 +241,7 @@ def main():
         # Loop over data using Polychord to evaluate the evidence
         pc_log_bayes_ratios = []
         pc_nlike = []
-    
+
     settings = None
     for data in v_data:
         # Can find noise only evidence analytically
@@ -277,7 +277,6 @@ def main():
         comm.Barrier()
         output = run_polychord(loglikelihood, n_dims,
                                n_derived, settings, prior)
-        
 
         # Compute log bayes ratio
         if rank == 0:
