@@ -20,21 +20,19 @@ network to use for the comparison.
 # Required imports
 from __future__ import annotations
 from typing import Callable, Tuple
-from train_evidence_network import get_noise_sigma, load_configuration_dict, \
-    timing_filename, add_timing_data
+from train_evidence_network import get_noise_sigma, load_configuration_dict
 from simulators.twenty_one_cm import load_globalemu_emulator, \
     global_signal_experiment_measurement_redshifts, GLOBALEMU_INPUTS, \
     GLOBALEMU_PARAMETER_RANGES
 import os
 import shutil
-from mpi4py import MPI  # noqa: F401
+from mpi4py import MPI
 import numpy as np
 from pypolychord import PolyChordSettings, run_polychord
 from pypolychord.priors import UniformPrior, GaussianPrior, LogUniformPrior
 from copy import deepcopy
 from scipy.stats import truncnorm
 import matplotlib.pyplot as plt
-import time
 
 # Parameters
 CHAIN_DIR = "chains"
@@ -212,10 +210,13 @@ def generate_prior(config_dict: dict) -> Callable:
 
 def main():
     """Verify accuracy of evidence network with Polychord."""
+    # MPI
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+
     # Get noise sigma and configuration data
     sigma_noise = get_noise_sigma()
     config_dict = load_configuration_dict()
-    timing_file = timing_filename(sigma_noise)
 
     # Load verification data
     verification_data_file = (
@@ -233,14 +234,15 @@ def main():
     # Generate priors
     prior = generate_prior(config_dict)
 
-    # Make sure chains directory exists
-    os.makedirs(CHAIN_DIR, exist_ok=True)
+    if rank == 0:
+        # Make sure chains directory exists
+        os.makedirs(CHAIN_DIR, exist_ok=True)
 
-    # Loop over data using Polychord to evaluate the evidence
-    pc_log_bayes_ratios = []
-    pc_nlike = []
+        # Loop over data using Polychord to evaluate the evidence
+        pc_log_bayes_ratios = []
+        pc_nlike = []
+
     settings = None
-    start = time.time()
     for data in v_data:
         # Can find noise only evidence analytically
         log_z_noise_only = noise_only_log_evidence(data, sigma_noise)
@@ -261,33 +263,35 @@ def main():
         settings.read_resume = False
 
         # Clear out base directory ready for the run
-        try:
-            shutil.rmtree(settings.base_dir)
-        except OSError:
-            pass
-        try:
-            os.mkdir(settings.base_dir)
-        except OSError:
-            pass
+        if rank == 0:
+            try:
+                shutil.rmtree(settings.base_dir)
+            except OSError:
+                pass
+            try:
+                os.mkdir(settings.base_dir)
+            except OSError:
+                pass
 
         # Run polychord
+        comm.Barrier()
         output = run_polychord(loglikelihood, n_dims,
                                n_derived, settings, prior)
-        log_z_noisy_signal = output.logZ
 
         # Compute log bayes ratio
-        log_bayes_ratio = log_z_noisy_signal - log_z_noise_only
-        pc_log_bayes_ratios.append(log_bayes_ratio)
-        pc_nlike.append(output.nlike)
+        if rank == 0:
+            log_z_noisy_signal = output.logZ
 
-    # Record timing data
-    end = time.time()
-    add_timing_data(timing_file, 'total_polychord_log_k',
-                    end - start)
-    add_timing_data(timing_file, 'average_polychord_log_k',
-                    (end - start) / v_data.shape[0])
+            # Compute log bayes ratio
+            log_bayes_ratio = log_z_noisy_signal - log_z_noise_only
+            pc_log_bayes_ratios.append(log_bayes_ratio)
+            pc_nlike.append(output.nlike)
+        comm.Barrier()
 
     # Clean up now finished
+    if rank != 0:
+        return
+
     try:
         shutil.rmtree(settings.base_dir)
     except OSError:
@@ -297,14 +301,14 @@ def main():
     pc_log_bayes_ratios = np.array(pc_log_bayes_ratios)
     polychord_data_file = (
         os.path.join('verification_data',
-                     f'noise_{sigma_noise:.4f}_polychord_log_z.npz'))
+                     f'noise_{sigma_noise:.4f}_polychord_log_k.npz'))
     np.savez(polychord_data_file, log_bayes_ratios=pc_log_bayes_ratios)
 
     # Create output directory for results of comparison
-    os.makedirs(os.path.join("figures_and_results",
+    os.makedirs(os.path.join("figures",
                              "polychord_verification"), exist_ok=True)
     numeric_results_filename = os.path.join(
-        "figures_and_results",
+        "figures",
         "polychord_verification",
         f"polychord_verification_"
         f"en_noise_{sigma_noise:.4f}_K_results.txt")
@@ -316,9 +320,9 @@ def main():
 
     # Mean difference and rmse error in log Z
     error = en_log_bayes_ratios - pc_log_bayes_ratios
-    numeric_results_file.write(f"Mean log Z error: "
+    numeric_results_file.write(f"Mean log K error: "
                                f"{np.mean(error):.4f}\n")
-    numeric_results_file.write(f"RMSE in log Z: "
+    numeric_results_file.write(f"RMSE in log K: "
                                f"{np.sqrt(np.mean(error**2)):.4f}\n")
 
     # And mean and total number of live point
@@ -330,7 +334,7 @@ def main():
     numeric_results_file.close()
 
     # Plot results
-    plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
+    plt.style.use(os.path.join('figures', 'mnras_single.mplstyle'))
     fig, ax = plt.subplots()
     ax.scatter(en_log_bayes_ratios, pc_log_bayes_ratios, c='C0')
     min_log_z = np.min([np.min(en_log_bayes_ratios),
@@ -338,13 +342,13 @@ def main():
     max_log_z = np.max([np.max(en_log_bayes_ratios),
                         np.max(pc_log_bayes_ratios)])
     ax.plot([min_log_z, max_log_z], [min_log_z, max_log_z], c='k', ls='--')
-    ax.set_xlabel(r'$\log Z_{\rm EN}$')
-    ax.set_ylabel(r'$\log Z_{\rm PolyChord}$')
+    ax.set_xlabel(r'$\log K_{\rm EN}$')
+    ax.set_ylabel(r'$\log K_{\rm PolyChord}$')
 
     # Save figure
     fig.tight_layout()
     filename = os.path.join(
-        "figures_and_results",
+        "figures",
         "polychord_verification",
         f"polychord_verification_"
         f"en_noise_{sigma_noise:.4f}_K.pdf")

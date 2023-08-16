@@ -259,6 +259,15 @@ def main():
                           f'noise_{sigma_noise:.4f}_verification_data.npz'),
              data=data, labels=labels, log_bayes_ratios=log_bayes_ratios)
 
+    # Verification evaluations for comparison with other methods
+    verification_ds_per_model = config_dict['verification_data_sets_per_model']
+    data, labels = en.get_simulated_data(verification_ds_per_model)
+    log_bayes_ratios = en.evaluate_log_bayes_ratio(data)
+    os.makedirs('verification_data', exist_ok=True)
+    np.savez(os.path.join('verification_data',
+                          f'noise_{sigma_noise:.4f}_verification_data.npz'),
+             data=data, labels=labels, log_bayes_ratios=log_bayes_ratios)
+
 
 if __name__ == "__main__":
     main()
