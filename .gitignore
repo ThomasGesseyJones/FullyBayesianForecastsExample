@@ -161,3 +161,6 @@ cython_debug/
 
 # globalemu
 T_release/*
+
+# PolyChord
+chains/*
