@@ -348,7 +348,8 @@ def main():
     # Plot results
     plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
     fig, ax = plt.subplots()
-    ax.scatter(en_log_bayes_ratios, pc_log_bayes_ratios, c='C0')
+    ax.scatter(en_log_bayes_ratios, pc_log_bayes_ratios, c='C0',
+               s=1, marker='x')
     min_log_z = np.min([np.min(en_log_bayes_ratios),
                         np.min(pc_log_bayes_ratios)])
     max_log_z = np.max([np.max(en_log_bayes_ratios),
