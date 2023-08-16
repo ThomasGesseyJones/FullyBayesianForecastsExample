@@ -35,6 +35,7 @@ from copy import deepcopy
 from scipy.stats import truncnorm
 import matplotlib.pyplot as plt
 import time
+from math import erf
 
 # Parameters
 CHAIN_DIR = "chains"
@@ -357,6 +358,16 @@ def main():
     ax.set_ylabel(r'$\log K_{\rm PolyChord}$')
     ax.set_xlim(-15, 30)
     ax.set_ylim(-15, 30)
+
+    # Add lines at 2, 3 and 5 sigma to guide the eye as to where we need
+    # the network to be accurate
+    for detection_sigma in [2, 3, 5]:
+        probability = (1 + erf(detection_sigma / np.sqrt(2)) - 1)
+        inv_probability = 1 - probability
+        detection_threshold = np.log(probability / inv_probability)
+        ax.axvline(detection_threshold, ls=':',
+                   zorder=-1, label=rf'{detection_sigma}$\sigma$')
+    ax.legend()
 
     # Save figure
     fig.tight_layout()
