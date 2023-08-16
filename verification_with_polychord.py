@@ -302,7 +302,7 @@ def main():
     pc_log_bayes_ratios = np.array(pc_log_bayes_ratios)
     polychord_data_file = (
         os.path.join('verification_data',
-                     f'noise_{sigma_noise:.4f}_polychord_log_z.npz'))
+                     f'noise_{sigma_noise:.4f}_polychord_log_k.npz'))
     np.savez(polychord_data_file, log_bayes_ratios=pc_log_bayes_ratios)
 
     # Create output directory for results of comparison
