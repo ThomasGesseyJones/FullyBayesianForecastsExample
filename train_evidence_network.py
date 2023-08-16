@@ -31,6 +31,8 @@ from copy import deepcopy
 import yaml
 import os
 import matplotlib.pyplot as plt
+import pickle as pkl
+import time
 
 
 # Parameters
@@ -70,6 +72,58 @@ def load_configuration_dict() -> dict:
     """
     with open("configuration.yaml", 'r') as file:
         return yaml.safe_load(file)
+
+
+def timing_filename(noise_sigma: float) -> str:
+    """Get the filename for the timing data.
+
+    Parameters
+    ----------
+    noise_sigma : float
+        The noise sigma in K.
+
+    Returns
+    -------
+    filename : str
+        The filename for the timing data.
+    """
+    folder = os.path.join('figures_and_results', 'timing_data')
+    os.makedirs(folder, exist_ok=True)
+    return os.path.join(folder, f'en_noise_{noise_sigma:.4f}_timing_data.pkl')
+
+
+def clear_timing_data(timing_file: str):
+    """Clear the timing data file.
+
+    Parameters
+    ----------
+    timing_file : str
+        The filename for the timing data.
+    """
+    with open(timing_file, 'wb') as file:
+        pkl.dump({}, file)
+
+
+def add_timing_data(timing_file: str, entry_name: str, time_s: float):
+    """Add timing data to the timing data file.
+
+    Parameters
+    ----------
+    timing_file : str
+        The filename for the timing data.
+    entry_name : str
+        The name of the entry to add.
+    time_s : float
+        The time to add in seconds.
+    """
+    if os.path.isfile(timing_file):
+        with open(timing_file, 'rb') as file:
+            timing_data = pkl.load(file)
+    else:
+        timing_data = {}
+    timing_data[entry_name] = time_s
+    with open(timing_file, 'wb') as file:
+        pkl.dump(timing_data, file)
 
 
 # Priors
@@ -167,14 +221,21 @@ def main():
     # IO
     sigma_noise = get_noise_sigma()
     config_dict = load_configuration_dict()
+    timing_file = timing_filename(sigma_noise)
 
     # Set-up simulators
+    start = time.time()
     noise_only_simulator, noisy_signal_simulator = assemble_simulators(
         config_dict, sigma_noise)
+    end = time.time()
+    add_timing_data(timing_file, 'simulator_assembly', end - start)
 
     # Create and train evidence network
+    start = time.time()
     en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator)
     en.train()
+    end = time.time()
+    add_timing_data(timing_file, 'network_training', end - start)
 
     # Save the network
     network_folder = os.path.join("models", f'en_noise_{sigma_noise:.4f}')
@@ -183,11 +244,16 @@ def main():
     en.save(network_file)
 
     # Perform blind coverage test
-    plt.style.use(os.path.join('figures', 'mnras_single.mplstyle'))
+    start = time.time()
+    plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
     fig, ax = plt.subplots()
     _ = en.blind_coverage_test(plotting_ax=ax, num_validation_samples=10_000)
-    fig.savefig(os.path.join('figures', 'blind_coverage_tests',
+    figure_folder = os.path.join('figures_and_results', 'blind_coverage_tests')
+    os.makedirs(figure_folder, exist_ok=True)
+    fig.savefig(os.path.join(figure_folder,
                              f'en_noise_{sigma_noise:.4f}_blind_coverage.pdf'))
+    end = time.time()
+    add_timing_data(timing_file, 'bct', end - start)
 
     # Verification evaluations for comparison with other methods
     verification_ds_per_model = config_dict['verification_data_sets_per_model']
@@ -197,6 +263,17 @@ def main():
     np.savez(os.path.join('verification_data',
                           f'noise_{sigma_noise:.4f}_verification_data.npz'),
              data=data, labels=labels, log_bayes_ratios=log_bayes_ratios)
+
+    # Verification evaluations for comparison with other methods
+    verification_ds_per_model = config_dict['verification_data_sets_per_model']
+    data, labels = en.get_simulated_data(verification_ds_per_model)
+    log_bayes_ratios = en.evaluate_log_bayes_ratio(data)
+    os.makedirs('verification_data', exist_ok=True)
+    np.savez(os.path.join('verification_data',
+                          f'noise_{sigma_noise:.4f}_verification_data.npz'),
+             data=np.squeeze(data),
+             labels=np.squeeze(labels),
+             log_bayes_ratios=np.squeeze(log_bayes_ratios))
 
 
 if __name__ == "__main__":

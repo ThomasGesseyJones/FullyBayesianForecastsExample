@@ -20,7 +20,8 @@ network to use for the comparison.
 # Required imports
 from __future__ import annotations
 from typing import Callable, Tuple
-from train_evidence_network import get_noise_sigma, load_configuration_dict
+from train_evidence_network import get_noise_sigma, load_configuration_dict, \
+    timing_filename, add_timing_data
 from simulators.twenty_one_cm import load_globalemu_emulator, \
     global_signal_experiment_measurement_redshifts, GLOBALEMU_INPUTS, \
     GLOBALEMU_PARAMETER_RANGES
@@ -33,6 +34,7 @@ from pypolychord.priors import UniformPrior, GaussianPrior, LogUniformPrior
 from copy import deepcopy
 from scipy.stats import truncnorm
 import matplotlib.pyplot as plt
+import time
 
 # Parameters
 CHAIN_DIR = "chains"
@@ -217,6 +219,7 @@ def main():
     # Get noise sigma and configuration data
     sigma_noise = get_noise_sigma()
     config_dict = load_configuration_dict()
+    timing_file = timing_filename(sigma_noise)
 
     # Load verification data
     verification_data_file = (
@@ -243,6 +246,7 @@ def main():
         pc_nlike = []
 
     settings = None
+    start = time.time()
     for data in v_data:
         # Can find noise only evidence analytically
         log_z_noise_only = noise_only_log_evidence(data, sigma_noise)
@@ -292,23 +296,30 @@ def main():
     if rank != 0:
         return
 
+    # Record timing data
+    end = time.time()
+    add_timing_data(timing_file, 'total_polychord_log_k',
+                    end - start)
+    add_timing_data(timing_file, 'average_polychord_log_k',
+                    (end - start) / v_data.shape[0])
+
     try:
         shutil.rmtree(settings.base_dir)
     except OSError:
         pass
 
     # Save PolyChord log bayes ratios if needed for later comparison
-    pc_log_bayes_ratios = np.array(pc_log_bayes_ratios)
+    pc_log_bayes_ratios = np.squeeze(np.array(pc_log_bayes_ratios))
     polychord_data_file = (
         os.path.join('verification_data',
                      f'noise_{sigma_noise:.4f}_polychord_log_k.npz'))
     np.savez(polychord_data_file, log_bayes_ratios=pc_log_bayes_ratios)
 
     # Create output directory for results of comparison
-    os.makedirs(os.path.join("figures",
+    os.makedirs(os.path.join("figures_and_results",
                              "polychord_verification"), exist_ok=True)
     numeric_results_filename = os.path.join(
-        "figures",
+        "figures_and_results",
         "polychord_verification",
         f"polychord_verification_"
         f"en_noise_{sigma_noise:.4f}_K_results.txt")
@@ -334,7 +345,7 @@ def main():
     numeric_results_file.close()
 
     # Plot results
-    plt.style.use(os.path.join('figures', 'mnras_single.mplstyle'))
+    plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
     fig, ax = plt.subplots()
     ax.scatter(en_log_bayes_ratios, pc_log_bayes_ratios, c='C0')
     min_log_z = np.min([np.min(en_log_bayes_ratios),
@@ -348,7 +359,7 @@ def main():
     # Save figure
     fig.tight_layout()
     filename = os.path.join(
-        "figures",
+        "figures_and_results",
         "polychord_verification",
         f"polychord_verification_"
         f"en_noise_{sigma_noise:.4f}_K.pdf")
