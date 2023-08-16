@@ -26,7 +26,7 @@ from simulators.twenty_one_cm import load_globalemu_emulator, \
     GLOBALEMU_PARAMETER_RANGES
 import os
 import shutil
-from mpi4py import MPI  # noqa: F401
+from mpi4py import MPI 
 import numpy as np
 from pypolychord import PolyChordSettings, run_polychord
 from pypolychord.priors import UniformPrior, GaussianPrior, LogUniformPrior
@@ -210,6 +210,10 @@ def generate_prior(config_dict: dict) -> Callable:
 
 def main():
     """Verify accuracy of evidence network with Polychord."""
+    # MPI
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+
     # Get noise sigma and configuration data
     sigma_noise = get_noise_sigma()
     config_dict = load_configuration_dict()
@@ -229,13 +233,15 @@ def main():
 
     # Generate priors
     prior = generate_prior(config_dict)
+    
+    if rank == 0:
+        # Make sure chains directory exists
+        os.makedirs(CHAIN_DIR, exist_ok=True)
 
-    # Make sure chains directory exists
-    os.makedirs(CHAIN_DIR, exist_ok=True)
-
-    # Loop over data using Polychord to evaluate the evidence
-    pc_log_bayes_ratios = []
-    pc_nlike = []
+        # Loop over data using Polychord to evaluate the evidence
+        pc_log_bayes_ratios = []
+        pc_nlike = []
+    
     settings = None
     for data in v_data:
         # Can find noise only evidence analytically
@@ -257,26 +263,36 @@ def main():
         settings.read_resume = False
 
         # Clear out base directory ready for the run
-        try:
-            shutil.rmtree(settings.base_dir)
-        except OSError:
-            pass
-        try:
-            os.mkdir(settings.base_dir)
-        except OSError:
-            pass
+        if rank == 0:
+            try:
+                shutil.rmtree(settings.base_dir)
+            except OSError:
+                pass
+            try:
+                os.mkdir(settings.base_dir)
+            except OSError:
+                pass
 
         # Run polychord
+        comm.Barrier()
         output = run_polychord(loglikelihood, n_dims,
                                n_derived, settings, prior)
-        log_z_noisy_signal = output.logZ
+        
 
         # Compute log bayes ratio
-        log_bayes_ratio = log_z_noisy_signal - log_z_noise_only
-        pc_log_bayes_ratios.append(log_bayes_ratio)
-        pc_nlike.append(output.nlike)
+        if rank == 0:
+            log_z_noisy_signal = output.logZ
+
+            # Compute log bayes ratio
+            log_bayes_ratio = log_z_noisy_signal - log_z_noise_only
+            pc_log_bayes_ratios.append(log_bayes_ratio)
+            pc_nlike.append(output.nlike)
+        comm.Barrier()
 
     # Clean up now finished
+    if rank != 0:
+        return
+
     try:
         shutil.rmtree(settings.base_dir)
     except OSError:
@@ -305,9 +321,9 @@ def main():
 
     # Mean difference and rmse error in log Z
     error = en_log_bayes_ratios - pc_log_bayes_ratios
-    numeric_results_file.write(f"Mean log Z error: "
+    numeric_results_file.write(f"Mean log K error: "
                                f"{np.mean(error):.4f}\n")
-    numeric_results_file.write(f"RMSE in log Z: "
+    numeric_results_file.write(f"RMSE in log K: "
                                f"{np.sqrt(np.mean(error**2)):.4f}\n")
 
     # And mean and total number of live point
@@ -327,8 +343,8 @@ def main():
     max_log_z = np.max([np.max(en_log_bayes_ratios),
                         np.max(pc_log_bayes_ratios)])
     ax.plot([min_log_z, max_log_z], [min_log_z, max_log_z], c='k', ls='--')
-    ax.set_xlabel(r'$\log Z_{\rm EN}$')
-    ax.set_ylabel(r'$\log Z_{\rm PolyChord}$')
+    ax.set_xlabel(r'$\log K_{\rm EN}$')
+    ax.set_ylabel(r'$\log K_{\rm PolyChord}$')
 
     # Save figure
     fig.tight_layout()
