@@ -1,9 +1,14 @@
 """Train Evidence Network.
 
-Script to train the example Evidence Network for the paper. The created
+Script to train the Evidence Networks for the paper. The created
 Evidence Network is trained to predict the Bayes ratio between a model
 with a noisy 21-cm signal and a model with only noise. The network is
-saved to the `models` directory after training is complete.
+saved to the `models` directory after training is complete. After training
+the network is tested using the blind coverage test and the results are
+saved to the `figures_and_results` directory. The network is also evaluated
+on precomputed verification data sets, for which Polychord results are
+available, and the comparison is plot and saved to the
+`figures_and_results` directory.
 
 If using this script it is recommended to train on a GPU for speed.
 Plus some CPUs will not have enough memory to train the network.
@@ -20,6 +25,7 @@ from fbf_utilities import load_configuration_dict, get_noise_sigma, \
 import os
 import matplotlib.pyplot as plt
 import time
+from math import erf
 
 
 def main():
@@ -61,25 +67,102 @@ def main():
     end = time.time()
     add_timing_data(timing_file, 'bct', end - start)
 
-    # Verification evaluations for comparison with other methods
-    verification_ds_per_model = config_dict['verification_data_sets_per_model']
-    data, labels = en.get_simulated_data(verification_ds_per_model)
-    log_bayes_ratios = en.evaluate_log_bayes_ratio(data)
-    os.makedirs('verification_data', exist_ok=True)
-    np.savez(os.path.join('verification_data',
-                          f'noise_{sigma_noise:.4f}_verification_data.npz'),
-             data=data, labels=labels, log_bayes_ratios=log_bayes_ratios)
+    # Load verification data
+    verification_data_file = os.path.join(
+        'verification_data', f'noise_{sigma_noise:.4f}_verification_data.npz')
+    verification_file_contents = np.load(verification_data_file)
+    pc_log_bayes_ratios = verification_file_contents['log_bayes_ratios']
+    v_data = verification_file_contents['data']
+    v_labels = verification_file_contents['labels']
+    pc_nlike = verification_file_contents['nlike']
 
-    # Verification evaluations for comparison with other methods
-    verification_ds_per_model = config_dict['verification_data_sets_per_model']
-    data, labels = en.get_simulated_data(verification_ds_per_model)
-    log_bayes_ratios = en.evaluate_log_bayes_ratio(data)
-    os.makedirs('verification_data', exist_ok=True)
-    np.savez(os.path.join('verification_data',
-                          f'noise_{sigma_noise:.4f}_verification_data.npz'),
-             data=np.squeeze(data),
-             labels=np.squeeze(labels),
-             log_bayes_ratios=np.squeeze(log_bayes_ratios))
+    # Evaluate network on verification data
+    start = time.time()
+    en_log_bayes_ratios = np.squeeze(en.evaluate_log_bayes_ratio(v_data))
+    end = time.time()
+    add_timing_data(timing_file, 'verification_evaluations',
+                    end - start)
+
+    # In case useful save the log bayes ratios computed by the network
+    en_bayes_ratio_file = os.path.join(
+        'verification_data', f'noise_{sigma_noise:.4f}_en_log_k.npz')
+    np.savez(en_bayes_ratio_file, log_bayes_ratios=en_log_bayes_ratios)
+
+    # Create output directory for results of verification comparison
+    os.makedirs(os.path.join("figures_and_results",
+                             "polychord_verification"), exist_ok=True)
+    numeric_results_filename = os.path.join(
+        "figures_and_results",
+        "polychord_verification",
+        f"polychord_verification_"
+        f"en_noise_{sigma_noise:.4f}_K_results.txt")
+    numeric_results_file = open(numeric_results_filename, 'w')
+
+    # Print results
+    numeric_results_file.write('Polychord Verification Results\n')
+    numeric_results_file.write('-----------------------------\n\n')
+
+    # Mean difference and rmse error in log Z
+    error = en_log_bayes_ratios - pc_log_bayes_ratios
+    numeric_results_file.write(f"Mean log K error: "
+                               f"{np.mean(error):.4f}\n")
+    numeric_results_file.write(f"RMSE in log K: "
+                               f"{np.sqrt(np.mean(error ** 2)):.4f}\n")
+
+    # And mean and total number of live point
+    pc_nlike = np.array(pc_nlike)
+    numeric_results_file.write(f"Mean number of likelihood evaluations: "
+                               f"{np.mean(pc_nlike):.4f}\n")
+    numeric_results_file.write(f"Total number of likelihood evaluations: "
+                               f"{np.sum(pc_nlike):.4f}\n")
+    numeric_results_file.close()
+
+    # Plot results
+    plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
+    fig, ax = plt.subplots()
+    ax.scatter(en_log_bayes_ratios[v_labels == 0],
+               pc_log_bayes_ratios[v_labels == 0],
+               c='C0', label='No signal',
+               s=2, marker='x', zorder=1, alpha=0.8)
+    ax.scatter(en_log_bayes_ratios[v_labels == 1],
+               pc_log_bayes_ratios[v_labels == 1],
+               c='C1', label='Noisy Signal',
+               s=2, marker='x', zorder=1, alpha=0.8)
+    min_log_z = np.min([np.min(en_log_bayes_ratios),
+                        np.min(pc_log_bayes_ratios)])
+    max_log_z = np.max([np.max(en_log_bayes_ratios),
+                        np.max(pc_log_bayes_ratios)])
+    ax.plot([min_log_z, max_log_z], [min_log_z, max_log_z], c='k', ls='--',
+            zorder=0)
+    ax.set_xlabel(r'$\log K_{\rm EN}$')
+    ax.set_ylabel(r'$\log K_{\rm PolyChord}$')
+    ax.set_xlim(-15, 30)
+    ax.set_ylim(-15, 30)
+
+    # Add lines at 2, 3 and 5 sigma to guide the eye as to where we need
+    # the network to be accurate, coloured using default matplotlib
+    # colour cycle skipping the first colour
+    prop_cycle = plt.rcParams['axes.prop_cycle']
+    colors = prop_cycle.by_key()['color'][1:]
+    for detection_sigma, c in zip([2, 3, 5], colors):
+        probability = (1 + erf(detection_sigma / np.sqrt(2)) - 1)
+        inv_probability = 1 - probability
+        detection_threshold = np.log(probability / inv_probability)
+        ax.axvline(detection_threshold, ls=':',
+                   zorder=-1, label=rf'{detection_sigma}$\sigma$',
+                   c=c)
+        ax.axhline(detection_threshold, ls=':', zorder=-1, c=c)
+    ax.legend()
+
+    # Save figure
+    fig.tight_layout()
+    filename = os.path.join(
+        "figures_and_results",
+        "polychord_verification",
+        f"polychord_verification_"
+        f"en_noise_{sigma_noise:.4f}_K.pdf")
+    fig.savefig(filename)
+    plt.close(fig)
 
 
 if __name__ == "__main__":

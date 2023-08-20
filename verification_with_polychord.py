@@ -328,7 +328,8 @@ def main():
                           f'noise_{sigma_noise:.4f}_verification_data.npz'),
              data=v_data,
              labels=v_labels,
-             log_bayes_ratios=np.squeeze(np.array(pc_log_bayes_ratios)))
+             log_bayes_ratios=np.squeeze(np.array(pc_log_bayes_ratios)),
+             nlike=np.squeeze(np.array(pc_nlike)))
 
 
 if __name__ == "__main__":
