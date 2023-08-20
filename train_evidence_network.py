@@ -233,7 +233,7 @@ def main():
     # Create and train evidence network
     start = time.time()
     en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator)
-    en.train(epochs=20, roll_back=True)
+    en.train(epochs=30, roll_back=True)
     end = time.time()
     add_timing_data(timing_file, 'network_training', end - start)
 
