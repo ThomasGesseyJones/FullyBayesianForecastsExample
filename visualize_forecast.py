@@ -17,7 +17,7 @@ will require a different network to be trained.
 from __future__ import annotations
 from typing import Collection
 from evidence_networks import EvidenceNetwork
-from train_evidence_network import get_noise_sigma, load_configuration_dict, \
+from fbf_utilities import get_noise_sigma, load_configuration_dict, \
     assemble_simulators, timing_filename, add_timing_data
 from matplotlib.ticker import MaxNLocator
 import os

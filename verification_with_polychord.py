@@ -20,7 +20,7 @@ network to use for the comparison.
 # Required imports
 from __future__ import annotations
 from typing import Callable, Tuple
-from train_evidence_network import get_noise_sigma, load_configuration_dict, \
+from fbf_utilities import get_noise_sigma, load_configuration_dict, \
     timing_filename, add_timing_data
 from simulators.twenty_one_cm import load_globalemu_emulator, \
     global_signal_experiment_measurement_redshifts, GLOBALEMU_INPUTS, \
