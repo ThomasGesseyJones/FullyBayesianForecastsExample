@@ -28,6 +28,25 @@ import time
 from math import erf
 
 
+def sigma_to_log_k(sigma: float) -> float:
+    """Convert statistical significance in sigma to log Bayes ratio.
+
+    Parameters
+    ----------
+    sigma : float
+        The statistical significance in sigma.
+
+    Returns
+    -------
+    log_k : float
+        The equivalent log Bayes ratio.
+    """
+    probability = (1 + erf(sigma / np.sqrt(2)) - 1)
+    inv_probability = 1 - probability
+    log_k = np.log(probability / inv_probability)
+    return log_k
+
+
 def main():
     """Train the Evidence Network."""
     # IO
@@ -108,6 +127,33 @@ def main():
                                f"{np.mean(error):.4f}\n")
     numeric_results_file.write(f"RMSE in log K: "
                                f"{np.sqrt(np.mean(error ** 2)):.4f}\n")
+    numeric_results_file.write("\n")
+
+    # Detection changes
+    en_log_bayes_w_signal = en_log_bayes_ratios[v_labels == 1]
+    pc_log_bayes_w_signal = pc_log_bayes_ratios[v_labels == 1]
+    for detection_sigma in [2, 3, 5]:
+        detection_threshold = sigma_to_log_k(detection_sigma)
+        en_detected = en_log_bayes_w_signal > detection_threshold
+        pc_detected = pc_log_bayes_w_signal > detection_threshold
+        en_percent_detected = np.mean(en_detected) * 100
+        pc_percent_detected = np.mean(pc_detected) * 100
+        percent_difference = en_percent_detected - pc_percent_detected
+        percent_changed = np.mean(en_detected != pc_detected) * 100
+
+        numeric_results_file.write(
+            f"{detection_sigma} sigma detection statistics:\n")
+        numeric_results_file.write(
+            f"{en_percent_detected:.2f}% of signals were detectable "
+            f"according to Polychord\n")
+        numeric_results_file.write(
+            f"{pc_percent_detected:.2f}% of signals were detectable "
+            f"according to the network\n")
+        numeric_results_file.write(
+            f"{percent_difference:.2f}% difference in detection rate\n")
+        numeric_results_file.write(
+            f"{percent_changed:.2f}% of signals changed detection status\n")
+        numeric_results_file.write("\n")
 
     # And mean and total number of live point
     pc_nlike = np.array(pc_nlike)
@@ -145,9 +191,7 @@ def main():
     prop_cycle = plt.rcParams['axes.prop_cycle']
     colors = prop_cycle.by_key()['color'][1:]
     for detection_sigma, c in zip([2, 3, 5], colors):
-        probability = (1 + erf(detection_sigma / np.sqrt(2)) - 1)
-        inv_probability = 1 - probability
-        detection_threshold = np.log(probability / inv_probability)
+        detection_threshold = sigma_to_log_k(detection_sigma)
         ax.axvline(detection_threshold, ls=':',
                    zorder=-1, label=rf'{detection_sigma}$\sigma$',
                    c=c)
