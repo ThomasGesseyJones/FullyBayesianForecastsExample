@@ -229,7 +229,8 @@ def detectability_corner_plot(
     # Set figure title to the total detection probability
     total_detection_probability = np.mean(detectable)
     fig.suptitle(
-        f'Total Detection Probability: {total_detection_probability:.3f}')
+        f'Total Definitive Detection Probability: '
+        f'{total_detection_probability:.3f}')
 
     # Plot the off-diagonal
     parameter_resolution = 30
