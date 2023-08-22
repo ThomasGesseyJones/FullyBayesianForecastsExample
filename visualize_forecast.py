@@ -19,6 +19,7 @@ from typing import Collection
 from evidence_networks import EvidenceNetwork
 from fbf_utilities import get_noise_sigma, load_configuration_dict, \
     assemble_simulators, timing_filename, add_timing_data
+from train_evidence_network import EN_ALPHA
 from matplotlib.ticker import MaxNLocator
 import os
 import numpy as np
@@ -387,7 +388,8 @@ def main():
         config_dict, sigma_noise)
 
     # Load evidence network
-    en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator)
+    en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator,
+                         alpha=EN_ALPHA)
     network_folder = os.path.join("models", f'en_noise_{sigma_noise:.4f}')
     network_file = os.path.join(network_folder, "global_signal_en.h5")
     en.load(network_file)

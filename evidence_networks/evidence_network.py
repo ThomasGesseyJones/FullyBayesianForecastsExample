@@ -31,6 +31,9 @@ class EvidenceNetwork:
         The function should take the number of data sets to simulate as input,
         and it should return the data as an array and any parameters of
         interest as a pandas dataframe.
+    alpha: float, default = 2.0
+        The exponent of the leaky parity-odd transformation.
+        See arXiv:2305.11241 for details.
 
     Attributes
     ----------
@@ -48,7 +51,8 @@ class EvidenceNetwork:
         The labels used to validate the network
     """
 
-    def __init__(self, simulator_0: Callable, simulator_1: Callable):
+    def __init__(self, simulator_0: Callable, simulator_1: Callable,
+                 alpha: float = 2.0):
         """Initialize an EvidenceNetwork object.
 
         Parameters
@@ -63,6 +67,9 @@ class EvidenceNetwork:
             The function should take the number of data sets to simulate as
             input, and it should return the data as an array and any parameters
             of interest as a pandas dataframe.
+        alpha: float, default = 2.0
+            The exponent of the leaky parity-odd transformation used in the
+            loss function and output transformation.
         """
         # Check models are compatible
         sample_data_0, _ = simulator_0(1)
@@ -79,6 +86,7 @@ class EvidenceNetwork:
         self.simulator_1 = simulator_1
         self._data_size = sample_data_0.size
         self.trained = False
+        self.alpha = alpha
 
         # Attributes to be defined later
         self.nn_model = None
@@ -164,6 +172,9 @@ class EvidenceNetwork:
               validation_data_samples_per_model: int = 200_000,
               epochs: int = 10,
               batch_size: int = 100,
+              initial_learning_rate: float = 1e-4,
+              decay_steps: int = 1000,
+              decay_rate: float = 0.95,
               roll_back: bool = False) -> None:
         """Train the Bayes ratio network.
 
@@ -181,6 +192,12 @@ class EvidenceNetwork:
             The number of epochs to train for
         batch_size: int, default=100
             The batch size to use for training
+        initial_learning_rate: float, default=1e-4
+            The initial learning rate to use for training
+        decay_steps: int, default=1000
+            The number of steps per learning rate decay
+        decay_rate: float, default=0.95
+            The rate of learning rate decay
         roll_back: bool, default=False
             Whether to roll back the network to validation loss minimum at
             the end of training
@@ -192,12 +209,12 @@ class EvidenceNetwork:
 
         # Compile model, using details from arXiv:2305.11241
         self.nn_model.compile(
-            loss=l_pop_exponential_loss,
+            loss=generate_l_pop_exponential_loss(self.alpha),
             optimizer=keras.optimizers.Adam(
                 learning_rate=ExponentialDecay(
-                    initial_learning_rate=1e-4,
-                    decay_steps=1000,
-                    decay_rate=0.95,
+                    initial_learning_rate=initial_learning_rate,
+                    decay_steps=decay_steps,
+                    decay_rate=decay_rate,
                 )),
             metrics=["accuracy"],
         )
@@ -278,7 +295,7 @@ class EvidenceNetwork:
             data = data.reshape(1, -1)
 
         nn_output = self.nn_model(tf.constant(data), training=False)
-        return leaky_parity_odd_transformation(nn_output)
+        return leaky_parity_odd_transformation(nn_output, self.alpha)
 
     def evaluate_bayes_ratio(self, data: np.ndarray) -> np.ndarray:
         """Evaluate the Bayes ratio between model 1 and 0.
@@ -318,7 +335,8 @@ class EvidenceNetwork:
         """
         self.nn_model = keras.models.load_model(
             filename,
-            custom_objects={'l_pop_exponential_loss': l_pop_exponential_loss})
+            custom_objects={'l_pop_exponential_loss':
+                            generate_l_pop_exponential_loss(self.alpha)})
         self.trained = True
 
     def blind_coverage_test(self,
@@ -452,20 +470,36 @@ def leaky_parity_odd_transformation(x: np.ndarray,
     return x * k_backend.pow(k_backend.abs(x), alpha - 1) + x
 
 
-def l_pop_exponential_loss(model_label: float, f_x: np.ndarray) -> np.ndarray:
-    """l-POP-Exponential loss function from arxiv:2305.11241.
+def generate_l_pop_exponential_loss(alpha: float = 2.0) -> Callable:
+    """Generate the l-POP-Exponential loss function from arxiv:2305.11241.
 
     Parameters
     ----------
-    model_label: float
-        The true value of the model label (either 0.0 or 1.0)
-    f_x: np.ndarray
-        The value output by network
+    alpha: float, default=2.0
+        The exponent of the leaky parity-odd transformation.
 
     Returns
     -------
-    loss: np.ndarray
-        The loss function value
+    l_pop_exponential_loss: Callable
+        The l-POP-Exponential loss function
     """
-    return k_backend.exp((0.5 - model_label) *
-                         leaky_parity_odd_transformation(f_x))
+
+    def l_pop_exponential_loss(model_label: float,
+                               f_x: np.ndarray) -> np.ndarray:
+        """l-POP-Exponential loss function from arxiv:2305.11241.
+
+        Parameters
+        ----------
+        model_label: float
+            The true value of the model label (either 0.0 or 1.0)
+        f_x: np.ndarray
+            The value output by network
+
+        Returns
+        -------
+        loss: np.ndarray
+            The loss function value
+        """
+        return k_backend.exp((0.5 - model_label) *
+                             leaky_parity_odd_transformation(f_x, alpha))
+    return l_pop_exponential_loss

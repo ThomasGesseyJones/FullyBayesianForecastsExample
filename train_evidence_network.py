@@ -27,6 +27,9 @@ import matplotlib.pyplot as plt
 import time
 from math import erf
 
+# Parameters
+EN_ALPHA = 2.0
+
 
 def sigma_to_log_k(sigma: float) -> float:
     """Convert statistical significance in sigma to log Bayes ratio.
@@ -63,7 +66,8 @@ def main():
 
     # Create and train evidence network
     start = time.time()
-    en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator)
+    en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator,
+                         alpha=EN_ALPHA)
     en.train(epochs=30, roll_back=True)
     end = time.time()
     add_timing_data(timing_file, 'network_training', end - start)
