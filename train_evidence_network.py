@@ -68,7 +68,10 @@ def main():
     start = time.time()
     en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator,
                          alpha=EN_ALPHA)
-    en.train(epochs=30, roll_back=True)
+    en.train(epochs=30, 
+             decay_steps=100_000,
+             batch_size=1000,
+             roll_back=True)
     end = time.time()
     add_timing_data(timing_file, 'network_training', end - start)
 
