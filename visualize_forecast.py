@@ -205,7 +205,7 @@ def detectability_corner_plot(
         # Turn off labels on all but first and last row if there is a
         # plotted total detection probability
         if display_total_detection_probability == 'plot':
-            if i > 0 | i < num_params - 1:
+            if i > 0 & i < num_params - 1:
                 ax.set_yticklabels([])
                 ax.set_ylabel('')
 
