@@ -368,7 +368,7 @@ def detectability_corner_plot(
 
     elif display_total_detection_probability == 'plot':
         # Add axis in top right corner
-        ax = fig.add_axes([0.73, 0.73, 0.25, 0.26])
+        ax = fig.add_axes([0.73, 0.76, 0.25, 0.23])
 
         # Plot smoothed histogram of log bayes ratios
         hist, bin_edges = np.histogram(log_bayes_ratios, bins=50,
@@ -392,7 +392,7 @@ def detectability_corner_plot(
             xy=(detection_threshold+2, height_of_boundary/4),
             xytext=(detection_threshold+2, height_of_boundary/4),
             horizontalalignment='left', verticalalignment='center',
-            fontsize=8)
+            fontsize=6)
 
         # Format axis
         ax.set_xlabel(r'$\log \mathcal{K}$')
