@@ -205,7 +205,7 @@ def detectability_corner_plot(
         # Turn off labels on all but first and last row if there is a
         # plotted total detection probability
         if display_total_detection_probability == 'plot':
-            if i > 0 & i < num_params - 1:
+            if (i > 0) & (i < (num_params - 1)):
                 ax.set_yticklabels([])
                 ax.set_ylabel('')
 
@@ -373,10 +373,10 @@ def detectability_corner_plot(
         # Plot smoothed histogram of log bayes ratios
         hist, bin_edges = np.histogram(log_bayes_ratios, bins=50,
                                        density=True,
-                                       range=(np.min(log_bayes_ratios), 30))
+                                       range=(0, 30))
         bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
         ax.plot(bin_centers, hist, color='k', linewidth=0.5)
-        ax.set_xlim(np.min(log_bayes_ratios), 30)
+        ax.set_xlim(0, 30)
         ax.set_ylim(0)
 
         # Colour in the area under the curve above the detection threshold
@@ -389,14 +389,16 @@ def detectability_corner_plot(
         height_of_boundary = hist[bin_centers > detection_threshold][0]
         ax.annotate(
             rf' {total_detection_probability*100:.1f}\%',
-            xy=(detection_threshold+2, height_of_boundary/3),
-            xytext=(detection_threshold+2, height_of_boundary/3),
+            xy=(detection_threshold+2, height_of_boundary/4),
+            xytext=(detection_threshold+2, height_of_boundary/4),
             horizontalalignment='left', verticalalignment='center',
             fontsize=6)
 
         # Format axis
         ax.set_xlabel(r'$\log \mathcal{K}$')
         ax.set_ylabel(r'$P(\log \mathcal{K})$')
+        ax.tick_params('both', which='both', direction='inout',
+                       bottom=True,  left=True, right=True, top=True)
         fig.subplots_adjust(top=0.99)
 
     else:
