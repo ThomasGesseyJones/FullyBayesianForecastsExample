@@ -483,8 +483,7 @@ def main():
             parameters_to_plot,
             default_parameter_labels,
             parameters_to_log,
-            plotting_ranges={'tau': (0.040, 0.075)},
-            total_detection_probability='plot',
+            plotting_ranges={'tau': (0.040, 0.075)}
         )
         filename = os.path.join(
             "figures_and_results",
