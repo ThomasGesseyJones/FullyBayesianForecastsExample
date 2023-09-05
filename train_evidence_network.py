@@ -68,7 +68,8 @@ def main():
     start = time.time()
     en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator,
                          alpha=EN_ALPHA)
-    en.train(epochs=50,
+    en.train(epochs=20,
+             train_data_samples_per_model=2_000_000,
              initial_learning_rate=2e-4,
              decay_steps=100_000,
              batch_size=1000,
