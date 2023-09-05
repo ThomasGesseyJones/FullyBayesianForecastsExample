@@ -51,7 +51,7 @@ def detectability_corner_plot(
         line_kwargs: dict = None,
         pcolormesh_kwargs: dict = None,
         plotting_ranges: dict[str, tuple[float, float]] = None,
-        total_detection_probability: str | None = 'plot'
+        display_total_detection_probability: str | None = 'plot'
 ) -> plt.Figure:
     """Plot a fully Bayesian forecast of the detectability of a signal.
 
@@ -88,7 +88,7 @@ def detectability_corner_plot(
         of the parameter values. Note this range is only applied to the
         visualisation and does not affect the detectability calculation, e.g.
         the full range of the parameter is still used in the marginalisation.
-    total_detection_probability : str | None, optional
+    display_total_detection_probability : str | None, optional
         How to display the total detection probability. If None, no total
         detection probability information is displayed. If 'title', the total
         detection probability is displayed in the figure title. If 'plot', the
@@ -236,13 +236,13 @@ def detectability_corner_plot(
     # Calculate the total detection probability and display as requested
     total_detection_probability = np.mean(detectable)
 
-    if total_detection_probability == 'title':
+    if display_total_detection_probability == 'title':
         # Display in title
         fig.suptitle(
             f'Total Definitive Detection Probability: '
             f'{total_detection_probability:.3f}')
 
-    elif total_detection_probability == 'plot':
+    elif display_total_detection_probability == 'plot':
         # Add axis in top right corner
         ax = fig.add_axes([0.73, 0.73, 0.23, 0.2])
 
@@ -272,10 +272,10 @@ def detectability_corner_plot(
         ax.set_ylabel(r'$P(\log \mathcal{K})$')
 
     else:
-        if total_detection_probability is not None:
+        if display_total_detection_probability is not None:
             raise ValueError(
                 f'Invalid total_detection_probability: '
-                f'{total_detection_probability}. '
+                f'{display_total_detection_probability}. '
                 f'Valid options are "title", "plot" or None.')
 
     # Plot the off-diagonal
