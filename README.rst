@@ -7,7 +7,7 @@ Introduction
 
 :Name: FullyBayesianForecastsExample
 :Author: Thomas Gessey-Jones
-:Version: 0.0.8
+:Version: 0.0.9
 :Homepage: https://github.com/ThomasGesseyJones/FullyBayesianForecastsExample
 :Paper: TBD
 
