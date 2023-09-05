@@ -50,7 +50,8 @@ def detectability_corner_plot(
         parameters_to_log: Collection[str] = None,
         line_kwargs: dict = None,
         pcolormesh_kwargs: dict = None,
-        plotting_ranges: dict[str, tuple[float, float]] = None
+        plotting_ranges: dict[str, tuple[float, float]] = None,
+        total_detection_probability: str | None = 'plot'
 ) -> plt.Figure:
     """Plot a fully Bayesian forecast of the detectability of a signal.
 
@@ -87,6 +88,12 @@ def detectability_corner_plot(
         of the parameter values. Note this range is only applied to the
         visualisation and does not affect the detectability calculation, e.g.
         the full range of the parameter is still used in the marginalisation.
+    total_detection_probability : str | None, optional
+        How to display the total detection probability. If None, no total
+        detection probability information is displayed. If 'title', the total
+        detection probability is displayed in the figure title. If 'plot', the
+        total detection probability is displayed via a subplot
+        in the top right corner which shows the distribution of bayes ratios.
 
     Returns
     -------
@@ -226,11 +233,50 @@ def detectability_corner_plot(
     detectable = log_bayes_ratios > detection_threshold
     detectable = detectable.numpy()
 
-    # Set figure title to the total detection probability
+    # Calculate the total detection probability and display as requested
     total_detection_probability = np.mean(detectable)
-    fig.suptitle(
-        f'Total Definitive Detection Probability: '
-        f'{total_detection_probability:.3f}')
+
+    if total_detection_probability == 'title':
+        # Display in title
+        fig.suptitle(
+            f'Total Definitive Detection Probability: '
+            f'{total_detection_probability:.3f}')
+
+    elif total_detection_probability == 'plot':
+        # Add axis in top right corner
+        ax = fig.add_axes([0.73, 0.73, 0.23, 0.2])
+
+        # Plot smoothed histogram of log bayes ratios
+        hist, bin_edges = np.histogram(log_bayes_ratios, bins=100,
+                                       density=True,
+                                       range=(np.min(log_bayes_ratios), 30))
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+        ax.plot(bin_centers, hist, color='k', linewidth=0.5)
+        ax.set_xlim(np.min(log_bayes_ratios), 30)
+        ax.set_ylim(0)
+
+        # Colour in the area under the curve above the detection threshold
+        ax.fill_between(bin_centers, hist,
+                        where=bin_centers > detection_threshold,
+                        color='C1', alpha=0.5)
+
+        # Annotate coloured region with total detection probability
+        ax.annotate(
+            f'{total_detection_probability*100:.1f}%',
+            xy=(detection_threshold, 0), xytext=(0, 0),
+            horizontalalignment='left', verticalalignment='bottom',
+            fontsize=6)
+
+        # Format axis
+        ax.set_xlabel(r'$\log \mathcal{K}$')
+        ax.set_ylabel(r'$P(\log \mathcal{K})$')
+
+    else:
+        if total_detection_probability is not None:
+            raise ValueError(
+                f'Invalid total_detection_probability: '
+                f'{total_detection_probability}. '
+                f'Valid options are "title", "plot" or None.')
 
     # Plot the off-diagonal
     parameter_resolution = 30
@@ -437,7 +483,9 @@ def main():
             parameters_to_plot,
             default_parameter_labels,
             parameters_to_log,
-            plotting_ranges={'tau': (0.040, 0.075)})
+            plotting_ranges={'tau': (0.040, 0.075)},
+            total_detection_probability='plot',
+        )
         filename = os.path.join(
             "figures_and_results",
             "detectability_triangle_plots",
