@@ -475,12 +475,12 @@ def main():
     # Set-up plotting style and variables
     start = time.time()
     plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
-    plt.rcParams.update({'figure.figsize': (3.33, 3.33)})
+    plt.rcParams.update({'figure.figsize': (3.375, 3)})
     plt.rcParams.update({'ytick.labelsize': 6})
     plt.rcParams.update({'xtick.labelsize': 6})
     plt.rcParams.update({'axes.labelsize': 6})
     plt.rcParams.update({'figure.titlesize': 8})
-    plt.rcParams.update({'figure.subplot.bottom': 0.08})
+    plt.rcParams.update({'figure.subplot.bottom': 0.06})
     plt.rcParams.update({'figure.subplot.right': 0.88})
     plt.rcParams.update({'figure.subplot.top': 0.92})
     plt.rcParams.update({'figure.subplot.left': 0.14})
@@ -502,7 +502,8 @@ def main():
             parameters_to_plot,
             default_parameter_labels,
             parameters_to_log,
-            plotting_ranges={'tau': (0.040, 0.075)}
+            plotting_ranges={'tau': (0.040, 0.075)},
+            display_total_detection_probability=None
         )
         filename = os.path.join(
             "figures_and_results",
