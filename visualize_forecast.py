@@ -392,7 +392,7 @@ def detectability_corner_plot(
             xy=(detection_threshold+2, height_of_boundary/4),
             xytext=(detection_threshold+2, height_of_boundary/4),
             horizontalalignment='left', verticalalignment='center',
-            fontsize=6)
+            fontsize=8)
 
         # Format axis
         ax.set_xlabel(r'$\log \mathcal{K}$')
