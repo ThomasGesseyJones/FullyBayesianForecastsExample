@@ -389,9 +389,9 @@ def detectability_corner_plot(
         height_of_boundary = hist[bin_centers > detection_threshold][0]
         ax.annotate(
             rf' {total_detection_probability*100:.1f}\%',
-            xy=(detection_threshold, height_of_boundary/3),
-            xytext=(detection_threshold, height_of_boundary/3),
-            horizontalalignment='left', verticalalignment='bottom',
+            xy=(detection_threshold+2, height_of_boundary/3),
+            xytext=(detection_threshold+2, height_of_boundary/3),
+            horizontalalignment='left', verticalalignment='center',
             fontsize=6)
 
         # Format axis
