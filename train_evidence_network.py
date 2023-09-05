@@ -1,219 +1,53 @@
 """Train Evidence Network.
 
-Script to train the example Evidence Network for the paper. The created
+Script to train the Evidence Networks for the paper. The created
 Evidence Network is trained to predict the Bayes ratio between a model
 with a noisy 21-cm signal and a model with only noise. The network is
-saved to the `models` directory after training is complete.
+saved to the `models` directory after training is complete. After training
+the network is tested using the blind coverage test and the results are
+saved to the `figures_and_results` directory. The network is also evaluated
+on precomputed verification data sets, for which Polychord results are
+available, and the comparison is plot and saved to the
+`figures_and_results` directory.
 
 If using this script it is recommended to train on a GPU for speed.
 Plus some CPUs will not have enough memory to train the network.
 
 The script can take an optional command line argument to specify the
-noise sigma in K. The default is 0.025 K.
+noise sigma in K. The default is 0.079 K.
 """
 
 # Required imports
-from typing import Callable, Collection, Tuple
-import argparse
 import numpy as np
-from simulators import additive_simulator_combiner, Simulator
-from simulators.noise import generate_white_noise_simulator
-from simulators.twenty_one_cm import load_globalemu_emulator, \
-    GLOBALEMU_INPUTS, GLOBALEMU_PARAMETER_RANGES, \
-    global_signal_experiment_measurement_redshifts, \
-    generate_global_signal_simulator
-from priors import generate_uniform_prior_sampler, \
-    generate_log_uniform_prior_sampler, \
-    generate_gaussian_prior_sampler, \
-    generate_truncated_gaussian_prior_sampler
 from evidence_networks import EvidenceNetwork
-from copy import deepcopy
-import yaml
+from fbf_utilities import load_configuration_dict, get_noise_sigma, \
+    assemble_simulators, timing_filename, add_timing_data
 import os
 import matplotlib.pyplot as plt
-import pickle as pkl
 import time
-
+from math import erf
 
 # Parameters
-NOISE_DEFAULT = 0.025  # K
+EN_ALPHA = 2.0
 
 
-# IO
-def get_noise_sigma() -> float:
-    """Get the noise sigma from the command line arguments.
-
-    Returns
-    -------
-    noise_sigma : float
-        The noise sigma in K.
-    """
-    parser = argparse.ArgumentParser(
-        description="Train the Evidence Network."
-    )
-    parser.add_argument(
-        "noise",
-        type=float,
-        default=NOISE_DEFAULT,
-        help="The noise sigma in K.",
-        nargs='?'
-    )
-    args = parser.parse_args()
-    return args.noise
-
-
-def load_configuration_dict() -> dict:
-    """Load the configuration dictionary from the config.yaml file.
-
-    Returns
-    -------
-    config_dict : dict
-        Dictionary containing the configuration parameters.
-    """
-    with open("configuration.yaml", 'r') as file:
-        return yaml.safe_load(file)
-
-
-def timing_filename(noise_sigma: float) -> str:
-    """Get the filename for the timing data.
+def sigma_to_log_k(sigma: float) -> float:
+    """Convert statistical significance in sigma to log Bayes ratio.
 
     Parameters
     ----------
-    noise_sigma : float
-        The noise sigma in K.
+    sigma : float
+        The statistical significance in sigma.
 
     Returns
     -------
-    filename : str
-        The filename for the timing data.
+    log_k : float
+        The equivalent log Bayes ratio.
     """
-    folder = os.path.join('figures_and_results', 'timing_data')
-    os.makedirs(folder, exist_ok=True)
-    return os.path.join(folder, f'en_noise_{noise_sigma:.4f}_timing_data.pkl')
-
-
-def clear_timing_data(timing_file: str):
-    """Clear the timing data file.
-
-    Parameters
-    ----------
-    timing_file : str
-        The filename for the timing data.
-    """
-    with open(timing_file, 'wb') as file:
-        pkl.dump({}, file)
-
-
-def add_timing_data(timing_file: str, entry_name: str, time_s: float):
-    """Add timing data to the timing data file.
-
-    Parameters
-    ----------
-    timing_file : str
-        The filename for the timing data.
-    entry_name : str
-        The name of the entry to add.
-    time_s : float
-        The time to add in seconds.
-    """
-    if os.path.isfile(timing_file):
-        with open(timing_file, 'rb') as file:
-            timing_data = pkl.load(file)
-    else:
-        timing_data = {}
-    timing_data[entry_name] = time_s
-    with open(timing_file, 'wb') as file:
-        pkl.dump(timing_data, file)
-
-
-# Priors
-def create_globalemu_prior_samplers(config_dict: dict) -> Collection[Callable]:
-    """Create a prior sampler over the globalemu parameters.
-
-    Parameters
-    ----------
-    config_dict : dict
-        Dictionary containing the configuration parameters.
-
-    Returns
-    -------
-    individual_priors : Collection[Callable]
-        For each parameter, a function that takes a number of samples and
-        returns the sampled values as an array.
-    """
-    # Loop over parameters constructing individual priors
-    individual_priors = []
-    for param in GLOBALEMU_INPUTS:
-        # Get prior info
-        prior_info = deepcopy(config_dict['priors'][param])
-
-        # Replace emu_min and emu_max with the min and max value globalemu
-        # can take for this parameter
-        for k, v in prior_info.items():
-            if v == 'emu_min':
-                prior_info[k] = GLOBALEMU_PARAMETER_RANGES[param][0]
-            elif v == 'emu_max':
-                prior_info[k] = GLOBALEMU_PARAMETER_RANGES[param][1]
-
-        # Get prior type
-        prior_type = prior_info.pop('type')
-        if prior_type == 'uniform':
-            prior_generator = generate_uniform_prior_sampler
-        elif prior_type == 'log_uniform':
-            prior_generator = generate_log_uniform_prior_sampler
-        elif prior_type == 'gaussian':
-            prior_generator = generate_gaussian_prior_sampler
-        elif prior_type == 'truncated_gaussian':
-            prior_generator = generate_truncated_gaussian_prior_sampler
-        else:
-            raise ValueError("Unknown prior type.")
-
-        # Generate prior sampler
-        prior_sampler = prior_generator(**prior_info)
-        individual_priors.append(prior_sampler)
-
-    # Combine priors
-    return individual_priors
-
-
-# Assemble simulators
-def assemble_simulators(
-        config_dict: dict,
-        sigma_noise: float
-) -> Tuple[Simulator, Simulator]:
-    """Assemble the simulator functions for the Evidence Network.
-
-    Parameters
-    ----------
-    config_dict : dict
-        Dictionary containing the configuration parameters.
-    sigma_noise : float
-        The noise sigma in K.
-
-    Returns
-    -------
-    noise_only_simulator : Simulator
-        Function that generates data from noise only model.
-    noisy_signal_simulator : Simulator
-        Function that generates data from noise + signal model.
-    """
-    # Set-up globalemu
-    globalemu_priors = create_globalemu_prior_samplers(config_dict)
-    globalemu_redshifts = global_signal_experiment_measurement_redshifts(
-        config_dict['frequency_resolution'])
-    globalemu_predictor = load_globalemu_emulator(globalemu_redshifts)
-
-    # Build simulators
-    noise_only_simulator = generate_white_noise_simulator(
-        len(globalemu_redshifts), sigma_noise)
-    noise_for_signal = generate_white_noise_simulator(
-        len(globalemu_redshifts), sigma_noise)
-    signal_simulator = generate_global_signal_simulator(
-        globalemu_predictor, *globalemu_priors)
-    noisy_signal_simulator = additive_simulator_combiner(
-        signal_simulator, noise_for_signal)
-
-    return noise_only_simulator, noisy_signal_simulator
+    probability = (1 + erf(sigma / np.sqrt(2)) - 1)
+    inv_probability = 1 - probability
+    log_k = np.log(probability / inv_probability)
+    return log_k
 
 
 def main():
@@ -232,8 +66,14 @@ def main():
 
     # Create and train evidence network
     start = time.time()
-    en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator)
-    en.train()
+    en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator,
+                         alpha=EN_ALPHA)
+    en.train(epochs=20,
+             train_data_samples_per_model=2_000_000,
+             initial_learning_rate=2e-4,
+             decay_steps=100_000,
+             batch_size=1000,
+             roll_back=True)
     end = time.time()
     add_timing_data(timing_file, 'network_training', end - start)
 
@@ -247,7 +87,7 @@ def main():
     start = time.time()
     plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
     fig, ax = plt.subplots()
-    _ = en.blind_coverage_test(plotting_ax=ax, num_validation_samples=10_000)
+    _ = en.blind_coverage_test(plotting_ax=ax, num_validation_samples=100_000)
     figure_folder = os.path.join('figures_and_results', 'blind_coverage_tests')
     os.makedirs(figure_folder, exist_ok=True)
     fig.savefig(os.path.join(figure_folder,
@@ -255,25 +95,127 @@ def main():
     end = time.time()
     add_timing_data(timing_file, 'bct', end - start)
 
-    # Verification evaluations for comparison with other methods
-    verification_ds_per_model = config_dict['verification_data_sets_per_model']
-    data, labels = en.get_simulated_data(verification_ds_per_model)
-    log_bayes_ratios = en.evaluate_log_bayes_ratio(data)
-    os.makedirs('verification_data', exist_ok=True)
-    np.savez(os.path.join('verification_data',
-                          f'noise_{sigma_noise:.4f}_verification_data.npz'),
-             data=data, labels=labels, log_bayes_ratios=log_bayes_ratios)
+    # Load verification data
+    verification_data_file = os.path.join(
+        'verification_data', f'noise_{sigma_noise:.4f}_verification_data.npz')
+    verification_file_contents = np.load(verification_data_file)
+    pc_log_bayes_ratios = verification_file_contents['log_bayes_ratios']
+    v_data = verification_file_contents['data']
+    v_labels = verification_file_contents['labels']
+    pc_nlike = verification_file_contents['nlike']
 
-    # Verification evaluations for comparison with other methods
-    verification_ds_per_model = config_dict['verification_data_sets_per_model']
-    data, labels = en.get_simulated_data(verification_ds_per_model)
-    log_bayes_ratios = en.evaluate_log_bayes_ratio(data)
-    os.makedirs('verification_data', exist_ok=True)
-    np.savez(os.path.join('verification_data',
-                          f'noise_{sigma_noise:.4f}_verification_data.npz'),
-             data=np.squeeze(data),
-             labels=np.squeeze(labels),
-             log_bayes_ratios=np.squeeze(log_bayes_ratios))
+    # Evaluate network on verification data
+    start = time.time()
+    en_log_bayes_ratios = np.squeeze(en.evaluate_log_bayes_ratio(v_data))
+    end = time.time()
+    add_timing_data(timing_file, 'verification_evaluations',
+                    end - start)
+
+    # In case useful save the log bayes ratios computed by the network
+    en_bayes_ratio_file = os.path.join(
+        'verification_data', f'noise_{sigma_noise:.4f}_en_log_k.npz')
+    np.savez(en_bayes_ratio_file, log_bayes_ratios=en_log_bayes_ratios)
+
+    # Create output directory for results of verification comparison
+    os.makedirs(os.path.join("figures_and_results",
+                             "polychord_verification"), exist_ok=True)
+    numeric_results_filename = os.path.join(
+        "figures_and_results",
+        "polychord_verification",
+        f"polychord_verification_"
+        f"en_noise_{sigma_noise:.4f}_K_results.txt")
+    numeric_results_file = open(numeric_results_filename, 'w')
+
+    # Print results
+    numeric_results_file.write('Polychord Verification Results\n')
+    numeric_results_file.write('-----------------------------\n\n')
+
+    # Mean difference and rmse error in log Z
+    error = en_log_bayes_ratios - pc_log_bayes_ratios
+    numeric_results_file.write(f"Mean log K error: "
+                               f"{np.mean(error):.4f}\n")
+    numeric_results_file.write(f"RMSE in log K: "
+                               f"{np.sqrt(np.mean(error ** 2)):.4f}\n")
+    numeric_results_file.write("\n")
+
+    # Detection changes
+    en_log_bayes_w_signal = en_log_bayes_ratios[v_labels == 1]
+    pc_log_bayes_w_signal = pc_log_bayes_ratios[v_labels == 1]
+    for detection_sigma in [2, 3, 5]:
+        detection_threshold = sigma_to_log_k(detection_sigma)
+        en_detected = en_log_bayes_w_signal > detection_threshold
+        pc_detected = pc_log_bayes_w_signal > detection_threshold
+        en_percent_detected = np.mean(en_detected) * 100
+        pc_percent_detected = np.mean(pc_detected) * 100
+        percent_difference = en_percent_detected - pc_percent_detected
+        percent_changed = np.mean(en_detected != pc_detected) * 100
+
+        numeric_results_file.write(
+            f"{detection_sigma} sigma detection statistics:\n")
+        numeric_results_file.write(
+            f"{en_percent_detected:.2f}% of signals were detectable "
+            f"according to Polychord\n")
+        numeric_results_file.write(
+            f"{pc_percent_detected:.2f}% of signals were detectable "
+            f"according to the network\n")
+        numeric_results_file.write(
+            f"{percent_difference:.2f}% difference in detection rate\n")
+        numeric_results_file.write(
+            f"{percent_changed:.2f}% of signals changed detection status\n")
+        numeric_results_file.write("\n")
+
+    # And mean and total number of live point
+    pc_nlike = np.array(pc_nlike)
+    numeric_results_file.write(f"Mean number of likelihood evaluations: "
+                               f"{np.mean(pc_nlike):.4f}\n")
+    numeric_results_file.write(f"Total number of likelihood evaluations: "
+                               f"{np.sum(pc_nlike):.4f}\n")
+    numeric_results_file.close()
+
+    # Plot results
+    plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
+    fig, ax = plt.subplots()
+    ax.scatter(en_log_bayes_ratios[v_labels == 0],
+               pc_log_bayes_ratios[v_labels == 0],
+               c='C0', label='No signal',
+               s=2, marker='x', zorder=1, alpha=0.8)
+    ax.scatter(en_log_bayes_ratios[v_labels == 1],
+               pc_log_bayes_ratios[v_labels == 1],
+               c='C1', label='Noisy Signal',
+               s=2, marker='x', zorder=1, alpha=0.8)
+    min_log_z = np.min([np.min(en_log_bayes_ratios),
+                        np.min(pc_log_bayes_ratios)])
+    max_log_z = np.max([np.max(en_log_bayes_ratios),
+                        np.max(pc_log_bayes_ratios)])
+    ax.plot([min_log_z, max_log_z], [min_log_z, max_log_z], c='k', ls='--',
+            zorder=0)
+    ax.set_xlabel(r'$\log K_{\rm EN}$')
+    ax.set_ylabel(r'$\log K_{\rm PolyChord}$')
+    ax.set_xlim(-15, 30)
+    ax.set_ylim(-15, 30)
+
+    # Add lines at 2, 3 and 5 sigma to guide the eye as to where we need
+    # the network to be accurate, coloured using default matplotlib
+    # colour cycle skipping the first colour
+    prop_cycle = plt.rcParams['axes.prop_cycle']
+    colors = prop_cycle.by_key()['color'][1:]
+    for detection_sigma, c in zip([2, 3, 5], colors):
+        detection_threshold = sigma_to_log_k(detection_sigma)
+        ax.axvline(detection_threshold, ls=':',
+                   zorder=-1, label=rf'{detection_sigma}$\sigma$',
+                   c=c)
+        ax.axhline(detection_threshold, ls=':', zorder=-1, c=c)
+    ax.legend()
+
+    # Save figure
+    fig.tight_layout()
+    filename = os.path.join(
+        "figures_and_results",
+        "polychord_verification",
+        f"polychord_verification_"
+        f"en_noise_{sigma_noise:.4f}_K.pdf")
+    fig.savefig(filename)
+    plt.close(fig)
 
 
 if __name__ == "__main__":

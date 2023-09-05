@@ -1,27 +1,26 @@
-"""Verify accuracy of evidence network with Polychord.
+"""Bayes Ratios from Polychord.
 
-This script evaluates the Bayes ratio for a range of mock data sets
-using Polychord. These values are then compared to the values previously
-computed by the evidence network. The script outputs summary statistics
-as well as plots of the Bayes ratio values.
+This script generates a range of mock data sets, and then evaluates the Bayes
+ratio between the noise only model and the noise + global signal model using
+Polychord. These results are then stored in the verification_data directory
+for later comparison with the results from the evidence network.
 
-This script is intended to be run after train_evidence_network.py has
-been run to train the evidence network. If not run, the script will
-fail.
-
-It is recommended to run this script on a CPU since PolyChord does not
-derive any benefit from GPUs.
+This script should be run before train_evidence_network.py, and only needs to
+be run once for each noise sigma (it is not necessary to rerun this script
+if changes are made to the evidence network). The script can be run in
+parallel using MPI (which is recommended for speed). It is recommended to run
+this script on a CPU since PolyChord does not derive any benefit from GPUs.
 
 The script can take an optional command line argument to specify the
-noise sigma in K. The default is 0.025 K. This indicates the evidence
-network to use for the comparison.
+noise sigma in K. The default is 0.079 K. This should be the same as the
+noise sigma used later in train_evidence_network.py.
 """
 
 # Required imports
 from __future__ import annotations
 from typing import Callable, Tuple
-from train_evidence_network import get_noise_sigma, load_configuration_dict, \
-    timing_filename, add_timing_data
+from fbf_utilities import get_noise_sigma, load_configuration_dict, \
+    timing_filename, add_timing_data, clear_timing_data, assemble_simulators
 from simulators.twenty_one_cm import load_globalemu_emulator, \
     global_signal_experiment_measurement_redshifts, GLOBALEMU_INPUTS, \
     GLOBALEMU_PARAMETER_RANGES
@@ -33,7 +32,6 @@ from pypolychord import PolyChordSettings, run_polychord
 from pypolychord.priors import UniformPrior, GaussianPrior, LogUniformPrior
 from copy import deepcopy
 from scipy.stats import truncnorm
-import matplotlib.pyplot as plt
 import time
 
 # Parameters
@@ -216,18 +214,32 @@ def main():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
 
-    # Get noise sigma and configuration data
+    # Get noise sigma, configuration data, and timing file
     sigma_noise = get_noise_sigma()
     config_dict = load_configuration_dict()
     timing_file = timing_filename(sigma_noise)
+    if rank == 0:
+        clear_timing_data(timing_file)
 
-    # Load verification data
-    verification_data_file = (
-        os.path.join('verification_data',
-                     f'noise_{sigma_noise:.4f}_verification_data.npz'))
-    verification_data_file_contents = np.load(verification_data_file)
-    v_data = verification_data_file_contents['data']
-    en_log_bayes_ratios = verification_data_file_contents['log_bayes_ratios']
+    # Generate verification data
+    if rank == 0:
+        verification_ds_per_model = (
+            config_dict)['verification_data_sets_per_model']
+        noise_only_simulator, noisy_signal_simulator = assemble_simulators(
+            config_dict, sigma_noise)
+        noise_only_data, _ = (
+            noise_only_simulator(verification_ds_per_model))
+        noisy_signal_data, _ = (
+            noisy_signal_simulator(verification_ds_per_model))
+        v_data = np.concatenate([noise_only_data, noisy_signal_data],
+                                axis=0)
+        v_labels = np.concatenate([np.zeros(noise_only_data.shape[0]),
+                                   np.ones(noisy_signal_data.shape[0])],
+                                  axis=0)
+    else:
+        v_data = None
+        v_labels = None
+    v_data = comm.bcast(v_data, root=0)
 
     # Set up global emu
     globalemu_redshifts = global_signal_experiment_measurement_redshifts(
@@ -308,63 +320,16 @@ def main():
     except OSError:
         pass
 
-    # Save PolyChord log bayes ratios if needed for later comparison
-    pc_log_bayes_ratios = np.squeeze(np.array(pc_log_bayes_ratios))
-    polychord_data_file = (
-        os.path.join('verification_data',
-                     f'noise_{sigma_noise:.4f}_polychord_log_k.npz'))
-    np.savez(polychord_data_file, log_bayes_ratios=pc_log_bayes_ratios)
-
-    # Create output directory for results of comparison
-    os.makedirs(os.path.join("figures_and_results",
-                             "polychord_verification"), exist_ok=True)
-    numeric_results_filename = os.path.join(
-        "figures_and_results",
-        "polychord_verification",
-        f"polychord_verification_"
-        f"en_noise_{sigma_noise:.4f}_K_results.txt")
-    numeric_results_file = open(numeric_results_filename, 'w')
-
-    # Print results
-    numeric_results_file.write('Polychord Verification Results\n')
-    numeric_results_file.write('-----------------------------\n\n')
-
-    # Mean difference and rmse error in log Z
-    error = en_log_bayes_ratios - pc_log_bayes_ratios
-    numeric_results_file.write(f"Mean log K error: "
-                               f"{np.mean(error):.4f}\n")
-    numeric_results_file.write(f"RMSE in log K: "
-                               f"{np.sqrt(np.mean(error**2)):.4f}\n")
-
-    # And mean and total number of live point
-    pc_nlike = np.array(pc_nlike)
-    numeric_results_file.write(f"Mean number of likelihood evaluations: "
-                               f"{np.mean(pc_nlike):.4f}\n")
-    numeric_results_file.write(f"Total number of likelihood evaluations: "
-                               f"{np.sum(pc_nlike):.4f}\n")
-    numeric_results_file.close()
-
-    # Plot results
-    plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
-    fig, ax = plt.subplots()
-    ax.scatter(en_log_bayes_ratios, pc_log_bayes_ratios, c='C0')
-    min_log_z = np.min([np.min(en_log_bayes_ratios),
-                        np.min(pc_log_bayes_ratios)])
-    max_log_z = np.max([np.max(en_log_bayes_ratios),
-                        np.max(pc_log_bayes_ratios)])
-    ax.plot([min_log_z, max_log_z], [min_log_z, max_log_z], c='k', ls='--')
-    ax.set_xlabel(r'$\log K_{\rm EN}$')
-    ax.set_ylabel(r'$\log K_{\rm PolyChord}$')
-
-    # Save figure
-    fig.tight_layout()
-    filename = os.path.join(
-        "figures_and_results",
-        "polychord_verification",
-        f"polychord_verification_"
-        f"en_noise_{sigma_noise:.4f}_K.pdf")
-    fig.savefig(filename)
-    plt.close(fig)
+    # Save verification data for later comparison, alongside log bayes ratios
+    # computed by Polychord and the labels of the models used to generate
+    # the data
+    os.makedirs('verification_data', exist_ok=True)
+    np.savez(os.path.join('verification_data',
+                          f'noise_{sigma_noise:.4f}_verification_data.npz'),
+             data=v_data,
+             labels=v_labels,
+             log_bayes_ratios=np.squeeze(np.array(pc_log_bayes_ratios)),
+             nlike=np.squeeze(np.array(pc_nlike)))
 
 
 if __name__ == "__main__":

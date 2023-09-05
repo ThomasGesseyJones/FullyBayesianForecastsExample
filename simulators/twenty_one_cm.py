@@ -160,8 +160,18 @@ def generate_global_signal_simulator(
         # Sample the parameters
         params = prior_sampler(num_sims)
 
-        # Run the simulator
-        signals = global_emu_predictor(params)[0]/1000  # mK -> K
+        # Run the simulator in batches to avoid memory issues
+        batch_size = 100_000
+        remaining_sims = num_sims
+        signals = []
+        while remaining_sims > 0:
+            batch_sims = min(batch_size, remaining_sims)
+            batch_params = params[num_sims - remaining_sims:
+                                  num_sims - remaining_sims + batch_sims]
+            # Remember converting mK -> K
+            signals.append(global_emu_predictor(batch_params)[0]/1000)
+            remaining_sims -= batch_sims
+        signals = np.concatenate(signals)
 
         # Convert params to DataFrame
         params = DataFrame(params, columns=GLOBALEMU_INPUTS)

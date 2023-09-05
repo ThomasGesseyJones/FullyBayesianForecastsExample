@@ -9,7 +9,7 @@ If using this script it is recommended to run on a GPU for speed.
 Plus some CPUs will not have enough memory for the mock data.
 
 The script can take an optional command line argument to specify the
-noise sigma in K. The default is 0.025 K. Each different noise level
+noise sigma in K. The default is 0.079 K. Each different noise level
 will require a different network to be trained.
 """
 
@@ -17,8 +17,9 @@ will require a different network to be trained.
 from __future__ import annotations
 from typing import Collection
 from evidence_networks import EvidenceNetwork
-from train_evidence_network import get_noise_sigma, load_configuration_dict, \
+from fbf_utilities import get_noise_sigma, load_configuration_dict, \
     assemble_simulators, timing_filename, add_timing_data
+from train_evidence_network import EN_ALPHA
 from matplotlib.ticker import MaxNLocator
 import os
 import numpy as np
@@ -228,7 +229,8 @@ def detectability_corner_plot(
     # Set figure title to the total detection probability
     total_detection_probability = np.mean(detectable)
     fig.suptitle(
-        f'Total Detection Probability: {total_detection_probability:.3f}')
+        f'Total Definitive Detection Probability: '
+        f'{total_detection_probability:.3f}')
 
     # Plot the off-diagonal
     parameter_resolution = 30
@@ -387,7 +389,8 @@ def main():
         config_dict, sigma_noise)
 
     # Load evidence network
-    en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator)
+    en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator,
+                         alpha=EN_ALPHA)
     network_folder = os.path.join("models", f'en_noise_{sigma_noise:.4f}')
     network_file = os.path.join(network_folder, "global_signal_en.h5")
     en.load(network_file)
