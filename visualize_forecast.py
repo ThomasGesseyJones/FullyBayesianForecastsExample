@@ -411,6 +411,7 @@ def detectability_corner_plot(
                 f'Invalid total_detection_probability: '
                 f'{display_total_detection_probability}. '
                 f'Valid options are "title", "plot" or None.')
+        fig.subplots_adjust(top=0.99)
 
     # Set tickers to MaxNLocator
     for row_idx in range(1, len(parameters_to_plot)):
