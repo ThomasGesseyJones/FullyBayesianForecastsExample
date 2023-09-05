@@ -202,6 +202,13 @@ def detectability_corner_plot(
         ax.tick_params('x', which='both', direction='inout', top=False,
                        bottom=True)
 
+        # Turn off labels on all but first and last row if there is a
+        # plotted total detection probability
+        if display_total_detection_probability == 'plot':
+            if i > 0 | i < num_params - 1:
+                ax.set_yticklabels([])
+                ax.set_ylabel('')
+
     # Format off-diagonal axes
     for row in range(num_params):
         for col in range(row):
@@ -233,51 +240,8 @@ def detectability_corner_plot(
     detectable = log_bayes_ratios > detection_threshold
     detectable = detectable.numpy()
 
-    # Calculate the total detection probability and display as requested
+    # Calculate the total detection probability
     total_detection_probability = np.mean(detectable)
-
-    if display_total_detection_probability == 'title':
-        # Display in title
-        fig.suptitle(
-            f'Total Definitive Detection Probability: '
-            f'{total_detection_probability:.3f}')
-
-    elif display_total_detection_probability == 'plot':
-        # Add axis in top right corner
-        ax = fig.add_axes([0.73, 0.73, 0.26, 0.26])
-
-        # Plot smoothed histogram of log bayes ratios
-        hist, bin_edges = np.histogram(log_bayes_ratios, bins=50,
-                                       density=True,
-                                       range=(np.min(log_bayes_ratios), 30))
-        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
-        ax.plot(bin_centers, hist, color='k', linewidth=0.5)
-        ax.set_xlim(np.min(log_bayes_ratios), 30)
-        ax.set_ylim(0)
-
-        # Colour in the area under the curve above the detection threshold
-        ax.fill_between(bin_centers, hist,
-                        where=bin_centers > detection_threshold,
-                        color='C1', alpha=0.5)
-
-        # Annotate coloured region with total detection probability
-        ax.annotate(
-            rf'{total_detection_probability*100:.1f}\%',
-            xy=(detection_threshold, 0), xytext=(detection_threshold, 0),
-            horizontalalignment='left', verticalalignment='bottom',
-            fontsize=6)
-
-        # Format axis
-        ax.set_xlabel(r'$\log \mathcal{K}$')
-        ax.set_ylabel(r'$P(\log \mathcal{K})$')
-        fig.subplots_adjust(top=0.99)
-
-    else:
-        if display_total_detection_probability is not None:
-            raise ValueError(
-                f'Invalid total_detection_probability: '
-                f'{display_total_detection_probability}. '
-                f'Valid options are "title", "plot" or None.')
 
     # Plot the off-diagonal
     parameter_resolution = 30
@@ -394,6 +358,51 @@ def detectability_corner_plot(
         ax.axhline(total_detection_probability,
                    color=cmap.get_cmap()(total_detection_probability),
                    linestyle='--', linewidth=0.5, zorder=-1, alpha=0.5)
+
+    # Display total detection probability
+    if display_total_detection_probability == 'title':
+        # Display in title
+        fig.suptitle(
+            f'Total Definitive Detection Probability: '
+            f'{total_detection_probability:.3f}')
+
+    elif display_total_detection_probability == 'plot':
+        # Add axis in top right corner
+        ax = fig.add_axes([0.73, 0.73, 0.26, 0.26])
+
+        # Plot smoothed histogram of log bayes ratios
+        hist, bin_edges = np.histogram(log_bayes_ratios, bins=50,
+                                       density=True,
+                                       range=(np.min(log_bayes_ratios), 30))
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+        ax.plot(bin_centers, hist, color='k', linewidth=0.5)
+        ax.set_xlim(np.min(log_bayes_ratios), 30)
+        ax.set_ylim(0)
+
+        # Colour in the area under the curve above the detection threshold
+        ax.fill_between(bin_centers, hist,
+                        where=bin_centers > detection_threshold,
+                        color=cmap.get_cmap()(total_detection_probability),
+                        alpha=0.5)
+
+        # Annotate coloured region with total detection probability
+        ax.annotate(
+            rf'{total_detection_probability*100:.1f}\%',
+            xy=(detection_threshold, 0), xytext=(detection_threshold, 0),
+            horizontalalignment='left', verticalalignment='bottom',
+            fontsize=6)
+
+        # Format axis
+        ax.set_xlabel(r'$\log \mathcal{K}$')
+        ax.set_ylabel(r'$P(\log \mathcal{K})$')
+        fig.subplots_adjust(top=0.99)
+
+    else:
+        if display_total_detection_probability is not None:
+            raise ValueError(
+                f'Invalid total_detection_probability: '
+                f'{display_total_detection_probability}. '
+                f'Valid options are "title", "plot" or None.')
 
     # Set tickers to MaxNLocator
     for row_idx in range(1, len(parameters_to_plot)):
