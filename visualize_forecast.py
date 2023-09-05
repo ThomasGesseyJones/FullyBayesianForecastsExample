@@ -244,10 +244,10 @@ def detectability_corner_plot(
 
     elif display_total_detection_probability == 'plot':
         # Add axis in top right corner
-        ax = fig.add_axes([0.73, 0.73, 0.23, 0.2])
+        ax = fig.add_axes([0.73, 0.73, 0.26, 0.26])
 
         # Plot smoothed histogram of log bayes ratios
-        hist, bin_edges = np.histogram(log_bayes_ratios, bins=100,
+        hist, bin_edges = np.histogram(log_bayes_ratios, bins=50,
                                        density=True,
                                        range=(np.min(log_bayes_ratios), 30))
         bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
@@ -262,14 +262,15 @@ def detectability_corner_plot(
 
         # Annotate coloured region with total detection probability
         ax.annotate(
-            f'{total_detection_probability*100:.1f}%',
-            xy=(detection_threshold, 0), xytext=(0, 0),
+            rf'{total_detection_probability*100:.1f}\%',
+            xy=(detection_threshold, 0), xytext=(detection_threshold, 0),
             horizontalalignment='left', verticalalignment='bottom',
             fontsize=6)
 
         # Format axis
         ax.set_xlabel(r'$\log \mathcal{K}$')
         ax.set_ylabel(r'$P(\log \mathcal{K})$')
+        fig.subplots_adjust(top=0.99)
 
     else:
         if display_total_detection_probability is not None:
