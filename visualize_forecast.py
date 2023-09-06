@@ -94,6 +94,10 @@ def detectability_corner_plot(
         detection probability is displayed in the figure title. If 'plot', the
         total detection probability is displayed via a subplot
         in the top right corner which shows the distribution of bayes ratios.
+        If a filename is given, the total detection probability of the signal
+        is output to that file (files must have a .txt extension, that is how
+        they are distinguished from the other options). Be warned files are
+        overwritten in this process. The default is 'plot'.
 
     Returns
     -------
@@ -405,6 +409,14 @@ def detectability_corner_plot(
         fig.text(0.15, 0.99, 'a)', fontsize=8, va='top', ha='right')
         fig.text(0.73, 0.99, 'b)', fontsize=8, va='top', ha='right')
 
+    elif display_total_detection_probability.endswith('.txt'):
+        fig.subplots_adjust(top=0.99)
+
+        # Open and write to file
+        with open(display_total_detection_probability, 'w') as f:
+            f.write('Total Definitive Detection Probability: ')
+            f.write(f'{total_detection_probability:.3f}')
+
     else:
         if display_total_detection_probability is not None:
             raise ValueError(
@@ -503,7 +515,11 @@ def main():
             default_parameter_labels,
             parameters_to_log,
             plotting_ranges={'tau': (0.040, 0.075)},
-            display_total_detection_probability=None
+            display_total_detection_probability=os.path.join(
+                'figures_and_results', 'detectability_triangle_plots',
+                f'detectability'
+                f'_{str(detection_threshold).replace(" ", "_")}_'
+                f'noise_{sigma_noise:.4f}_K.txt')
         )
         filename = os.path.join(
             "figures_and_results",
