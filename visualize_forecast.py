@@ -50,7 +50,8 @@ def detectability_corner_plot(
         parameters_to_log: Collection[str] = None,
         line_kwargs: dict = None,
         pcolormesh_kwargs: dict = None,
-        plotting_ranges: dict[str, tuple[float, float]] = None
+        plotting_ranges: dict[str, tuple[float, float]] = None,
+        display_total_detection_probability: str | None = 'plot'
 ) -> plt.Figure:
     """Plot a fully Bayesian forecast of the detectability of a signal.
 
@@ -87,6 +88,16 @@ def detectability_corner_plot(
         of the parameter values. Note this range is only applied to the
         visualisation and does not affect the detectability calculation, e.g.
         the full range of the parameter is still used in the marginalisation.
+    display_total_detection_probability : str | None, optional
+        How to display the total detection probability. If None, no total
+        detection probability information is displayed. If 'title', the total
+        detection probability is displayed in the figure title. If 'plot', the
+        total detection probability is displayed via a subplot
+        in the top right corner which shows the distribution of bayes ratios.
+        If a filename is given, the total detection probability of the signal
+        is output to that file (files must have a .txt extension, that is how
+        they are distinguished from the other options). Be warned files are
+        overwritten in this process. The default is 'plot'.
 
     Returns
     -------
@@ -195,6 +206,13 @@ def detectability_corner_plot(
         ax.tick_params('x', which='both', direction='inout', top=False,
                        bottom=True)
 
+        # Turn off labels on all but first and last row if there is a
+        # plotted total detection probability
+        if display_total_detection_probability == 'plot':
+            if (i > 0) & (i < (num_params - 1)):
+                ax.set_yticklabels([])
+                ax.set_ylabel('')
+
     # Format off-diagonal axes
     for row in range(num_params):
         for col in range(row):
@@ -226,11 +244,8 @@ def detectability_corner_plot(
     detectable = log_bayes_ratios > detection_threshold
     detectable = detectable.numpy()
 
-    # Set figure title to the total detection probability
+    # Calculate the total detection probability
     total_detection_probability = np.mean(detectable)
-    fig.suptitle(
-        f'Total Definitive Detection Probability: '
-        f'{total_detection_probability:.3f}')
 
     # Plot the off-diagonal
     parameter_resolution = 30
@@ -348,6 +363,68 @@ def detectability_corner_plot(
                    color=cmap.get_cmap()(total_detection_probability),
                    linestyle='--', linewidth=0.5, zorder=-1, alpha=0.5)
 
+    # Display total detection probability
+    if display_total_detection_probability == 'title':
+        # Display in title
+        fig.suptitle(
+            f'Total Definitive Detection Probability: '
+            f'{total_detection_probability:.3f}')
+
+    elif display_total_detection_probability == 'plot':
+        # Add axis in top right corner
+        ax = fig.add_axes([0.73, 0.759, 0.25, 0.231])
+
+        # Plot smoothed histogram of log bayes ratios
+        hist, bin_edges = np.histogram(log_bayes_ratios, bins=50,
+                                       density=True,
+                                       range=(0, 30))
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+        ax.plot(bin_centers, hist, color='k', linewidth=0.5)
+        ax.set_xlim(0, 30)
+        ax.set_ylim(0)
+
+        # Colour in the area under the curve above the detection threshold
+        ax.fill_between(bin_centers, hist,
+                        where=bin_centers > detection_threshold,
+                        color=cmap.get_cmap()(total_detection_probability),
+                        alpha=0.5)
+
+        # Annotate coloured region with total detection probability
+        height_of_boundary = hist[bin_centers > detection_threshold][0]
+        ax.annotate(
+            rf' {total_detection_probability*100:.1f}\%',
+            xy=(detection_threshold+2, height_of_boundary/4),
+            xytext=(detection_threshold+2, height_of_boundary/4),
+            horizontalalignment='left', verticalalignment='center',
+            fontsize=6)
+
+        # Format axis
+        ax.set_xlabel(r'$\log \mathcal{K}$')
+        ax.set_ylabel(r'$P(\log \mathcal{K})$')
+        ax.tick_params('both', which='both', direction='inout',
+                       bottom=True,  left=True, right=True, top=True)
+        fig.subplots_adjust(top=0.99)
+
+        # Add subplot labels
+        fig.text(0.15, 0.99, 'a)', fontsize=8, va='top', ha='right')
+        fig.text(0.73, 0.99, 'b)', fontsize=8, va='top', ha='right')
+
+    elif display_total_detection_probability.endswith('.txt'):
+        fig.subplots_adjust(top=0.99)
+
+        # Open and write to file
+        with open(display_total_detection_probability, 'w') as f:
+            f.write('Total Definitive Detection Probability: ')
+            f.write(f'{total_detection_probability:.3f}')
+
+    else:
+        if display_total_detection_probability is not None:
+            raise ValueError(
+                f'Invalid total_detection_probability: '
+                f'{display_total_detection_probability}. '
+                f'Valid options are "title", "plot" or None.')
+        fig.subplots_adjust(top=0.99)
+
     # Set tickers to MaxNLocator
     for row_idx in range(1, len(parameters_to_plot)):
         ax = axes[row_idx, 0]
@@ -410,12 +487,12 @@ def main():
     # Set-up plotting style and variables
     start = time.time()
     plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
-    plt.rcParams.update({'figure.figsize': (3.33, 3.33)})
+    plt.rcParams.update({'figure.figsize': (3.375, 3)})
     plt.rcParams.update({'ytick.labelsize': 6})
     plt.rcParams.update({'xtick.labelsize': 6})
     plt.rcParams.update({'axes.labelsize': 6})
     plt.rcParams.update({'figure.titlesize': 8})
-    plt.rcParams.update({'figure.subplot.bottom': 0.08})
+    plt.rcParams.update({'figure.subplot.bottom': 0.06})
     plt.rcParams.update({'figure.subplot.right': 0.88})
     plt.rcParams.update({'figure.subplot.top': 0.92})
     plt.rcParams.update({'figure.subplot.left': 0.14})
@@ -437,7 +514,13 @@ def main():
             parameters_to_plot,
             default_parameter_labels,
             parameters_to_log,
-            plotting_ranges={'tau': (0.040, 0.075)})
+            plotting_ranges={'tau': (0.040, 0.075)},
+            display_total_detection_probability=os.path.join(
+                'figures_and_results', 'detectability_triangle_plots',
+                f'detectability'
+                f'_{str(detection_threshold).replace(" ", "_")}_'
+                f'noise_{sigma_noise:.4f}_K.txt')
+        )
         filename = os.path.join(
             "figures_and_results",
             "detectability_triangle_plots",
