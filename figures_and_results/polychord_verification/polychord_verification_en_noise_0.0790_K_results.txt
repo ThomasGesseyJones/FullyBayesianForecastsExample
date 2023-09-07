@@ -1,0 +1,26 @@
+Polychord Verification Results
+-----------------------------
+
+Mean log K error: -17.5604
+RMSE in log K: 50.5286
+
+2 sigma detection statistics:
+71.20% of signals were detectable according to Polychord
+72.00% of signals were detectable according to the network
+-0.80% difference in detection rate
+1.60% of signals changed detection status
+
+3 sigma detection statistics:
+63.20% of signals were detectable according to Polychord
+64.00% of signals were detectable according to the network
+-0.80% difference in detection rate
+0.80% of signals changed detection status
+
+5 sigma detection statistics:
+50.60% of signals were detectable according to Polychord
+51.30% of signals were detectable according to the network
+-0.70% difference in detection rate
+1.70% of signals changed detection status
+
+Mean number of likelihood evaluations: 210051.0055
+Total number of likelihood evaluations: 420102011.0000
