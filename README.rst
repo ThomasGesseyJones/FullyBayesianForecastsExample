@@ -17,6 +17,10 @@ Overview
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://github.com/ThomasGesseyJones/ErrorAffirmations/blob/main/LICENSE
    :alt: License information
+.. image:: https://img.shields.io/badge/arXiv-2108.07282-b31b1b.svg?style=flat
+    :target: https://arxiv.org/abs/2108.07282
+    :alt: arXiv link
+
 
 Example of a Fully Bayesian Forecast using an `Evidence Network <https://ui.adsabs.harvard.edu/abs/2023arXiv230511241J/abstract>`__.
 This code also replicates the analysis presented in
@@ -125,7 +129,7 @@ Two other files of interest are:
 The various figures produced in the analysis are stored in the
 figures_and_results directory alongside the timing_data to assess the
 performance of the methodology. The figures and data generated in our
-analysis are provided in the repository for reference.
+analysis are provided in this repository for reference.
 
 Licence and Citation
 --------------------
