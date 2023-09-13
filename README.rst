@@ -48,7 +48,7 @@ by directly cloning it from GitHub. To do this run the following command in the 
 
     git clone git@github.com:ThomasGesseyJones/FullyBayesianForecastsExample.git
 
-This will create a local copy of the repository. The three main scripts can
+This will create a local copy of the repository. The pipeline can
 then be run from the terminal (see below).
 
 
