@@ -41,8 +41,8 @@ tests and comparison to `PolyChord <https://ui.adsabs.harvard.edu/abs/2015MNRAS.
 Installation
 ------------
 
-As an example analysis code the repository is intended to be installed locally
-by cloning the repository. To do this run the following command in the terminal
+The repository is intended to be installed locally
+by directly cloning it from GitHub. To do this run the following command in the terminal
 
 .. code:: bash
 
