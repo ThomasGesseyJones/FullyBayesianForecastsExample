@@ -79,18 +79,18 @@ There are three modules included in the repository:
 These three modules are then used in the three analysis scripts:
 
 - verification_with_polychord.py: This script generates a range of mock data sets, and then evaluates the Bayes
-  ratio between the noise only model and the noise + global signal model using
+  ratio between the noise-only model and the noise + global signal model using
   Polychord. These results are then stored in the verification_data directory
   for later comparison with the results from the evidence network. It should
   be run first.
 - train_evidence_network.py: This script builds the evidence network and
   data simulators, then trains the evidence network. Once trained it
-  stores the evidence network in the models directory and runs a blind
+  stores the evidence network in the models directory, then runs a blind
   coverage test on the network and validates its performance against the
   Polychord Bayes ratio evaluations from the previous script. It should
   be run second.
 - visualize_forecasts.py: This script loads the evidence network from the
-  models directory and uses it to forecast the chance of a REACH like
+  models directory and uses it to forecast the chance of a REACH-like
   experiment detecting the 21-cm global signal. It then plots this result
   for fixed astrophysical parameters as in Figure 1 of the letter. This is
   done for detection significance thresholds of 2, 3 and 5 sigma. It should
