@@ -127,8 +127,6 @@ figures_and_results directory alongside the timing_data to assess the
 performance of the methodology. The figures and data generated in our
 analysis are provided in the repository for reference.
 
-.. image:: https://github.com/ThomasGesseyJones/FullyBayesianForecastsExample/blob/readme/figures_and_results/detectability_triangle_plots/detectability_triangle_3_sigma_noise_0.0790_K.pdf
-
 Licence and Citation
 --------------------
 
