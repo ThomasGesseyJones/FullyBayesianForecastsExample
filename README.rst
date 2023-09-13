@@ -1,11 +1,11 @@
-================================
-Fully Bayesian Forecasts Example
-================================
+===============================
+Fully Bayesian Forecast Example
+===============================
 
 Overview
 --------
 
-:Name: Fully Bayesian Forecasts Example
+:Name: Fully Bayesian Forecast Example
 :Author: Thomas Gessey-Jones
 :Version: 0.1.2
 :Homepage: https://github.com/ThomasGesseyJones/FullyBayesianForecastsExample
@@ -22,16 +22,16 @@ Overview
     :alt: arXiv link
 
 
-Example of a Fully Bayesian Forecast using an `Evidence Network <https://ui.adsabs.harvard.edu/abs/2023arXiv230511241J/abstract>`__.
-This code also replicates the analysis presented in
+Example of a fully Bayesian forecast performed using an `Evidence Network <https://ui.adsabs.harvard.edu/abs/2023arXiv230511241J/abstract>`__.
+This code also replicates the analysis of
 `Gessey-Jones et al. (2023) <TBD>`__.
-It thus serves the dual purposes of providing an example code base others
-can modify for their own Fully Bayesian Forecasts and providing a
-reproducible analysis for the letter.
+This repository thus serves the dual purposes of providing an example code base others
+can modify to perform their own fully Bayesian forecasts and also providing a
+reproducible analysis pipeline for the letter.
 
-The overall goal of the code is to produce a Fully Bayesian Forecast for
+The overall goal of the code is to produce a fully Bayesian forecast for
 the chance of a `REACH <https://ui.adsabs.harvard.edu/abs/2022NatAs...6..984D/abstract>`__ like experiment
-detecting the 21-cm global signal, given a noise level. It also produces
+making a significant detection of the 21-cm global signal, given a noise level. It also produces
 figures showing how this conclusion changes with fixed astrophysical parameters
 and provides a way to validate the forecast through blind coverage
 tests and comparison to `PolyChord <https://ui.adsabs.harvard.edu/abs/2015MNRAS.453.4384H/abstract>`__.
