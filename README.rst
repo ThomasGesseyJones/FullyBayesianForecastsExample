@@ -74,10 +74,9 @@ There are three modules included in the repository:
   that take a number of data simulations to run and return that number of mock data
   simulations alongside the values of any parameters that were used in the
   simulations. Submodules of this module define functions to generate specific
-  simulators for models with noise and models with a 21-cm global signal and
-  noise.
+  simulators for models with noise only and models with a noisy 21-cm global signal.
 
-These three modules are then used in the three scripts:
+These three modules are then used in the three analysis scripts:
 
 - verification_with_polychord.py: This script generates a range of mock data sets, and then evaluates the Bayes
   ratio between the noise only model and the noise + global signal model using
