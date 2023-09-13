@@ -48,6 +48,82 @@ This will create a local copy of the repository. The three main scripts can
 then be run from the terminal (see below).
 
 
+Structure and Usage
+-------------------
+
+The code is split into two main parts. The first part is the
+modules which provide general functionality for the code. The second part
+is the scripts which run the analysis.
+
+There are three modules:
+
+- evidence_networks: This module contains the code for the evidence network
+  class. This class is used to build the evidence network used in the forecasts.
+  The module also provides an implementation of the l-POP loss function.
+  See the class docstring for more details of its capabilities and usage.
+- priors: This module contains the code to generate functions that
+  sample standard parameter prior distributions. These include
+  uniform, log-uniform, Gaussian, and truncated Gaussian priors.
+- simulators: This module define simulators. In our code these are functions
+  that take a number of simulations and return that number of mock data
+  simulations alongside the values of any parameters that were used in the
+  simulations. Submodules of this module define functions to generate specific
+  simulators, for models with noise and models with a 21-cm global signal and
+  noise.
+
+These three modules are then used in the three scripts:
+
+- verification_with_polychord.py: This script generates a range of mock data sets, and then evaluates the Bayes
+  ratio between the noise only model and the noise + global signal model using
+  Polychord. These results are then stored in the verification_data directory
+  for later comparison with the results from the evidence network. It should
+  be run first.
+- train_evidence_network.py: This script builds the evidence network and
+  data simulators, then trains the evidence network. Once trained it
+  stores the evidence network in the models directory and runs a blind
+  coverage test on the network and validates its performance against the
+  Polychord Bayes ratio evaluations from the previous script. It should
+  be run second.
+- visualize_forecasts.py: This script loads the evidence network from the
+  models directory and uses it to forecast the chance of a REACH like
+  experiment detecting the 21-cm global signal. It then plots this result
+  for fixed astrophysical parameters as in Figure 1 of the letter. This is
+  done for detection significance thresholds of 2, 3 and 5 sigma. It should
+  be run last.
+
+
+All three scripts have docstrings describing their role in more detail. The
+scripts can be run from the terminal using the following commands:
+
+.. code:: bash
+
+    python verification_with_polychord.py
+    python train_evidence_network.py
+    python visualize_forecasts.py
+
+to run with the default noise level of 79 mK. Alternatively you can pass
+them a command line argument to specify the noise level in K. For example
+to run with a noise level of 100 mK you would run the following commands:
+
+.. code:: bash
+
+    python verification_with_polychord.py 0.1
+    python train_evidence_network.py 0.1
+    python visualize_forecasts.py 0.1
+
+Two other files of interest are:
+
+- fbf_utilities.py: which defines IO functions
+  needed by the three scripts and a utility function to assemble the data
+  simulators.
+- configuration.yaml: which defines several parameters used in the code
+  including the experimental frequency resolution, the priors on the
+  astrophysical parameters of the global 21-cm signal model, and parameters
+  that control which astrophysical parameters are plotted in the forecast
+  figures.
+
+
+
 Licence and Citation
 --------------------
 
