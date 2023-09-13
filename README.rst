@@ -97,7 +97,8 @@ These three modules are used in the three analysis scripts:
   be run last.
 
 
-All three scripts have docstrings describing their role in more detail. The
+All three scripts have docstrings describing their role in more detail, as
+well as giving advice on how to run them most efficiently. The
 scripts can be run from the terminal using the following commands:
 
 .. code:: bash
