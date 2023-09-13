@@ -76,7 +76,7 @@ There are three modules included in the repository:
   simulations. Submodules of this module define functions to generate specific
   simulators for models with noise only and models with a noisy 21-cm global signal.
 
-These three modules are then used in the three analysis scripts:
+These three modules are used in the three analysis scripts:
 
 - verification_with_polychord.py: This script generates a range of mock data sets, and then evaluates the Bayes
   ratio between the noise-only model and the noise + global signal model using
@@ -106,8 +106,10 @@ scripts can be run from the terminal using the following commands:
     python train_evidence_network.py
     python visualize_forecasts.py
 
-to run with the default noise level of 79 mK. Alternatively you can pass
-them a command line argument to specify the noise level in K. For example
+to run with the default noise level of 79 mK and replicate the
+analysis from `Gessey-Jones et al. (2023) <TBD>`__.
+Alternatively you can pass
+the scripts a command line argument to specify the experiments noise level in K. For example
 to run with a noise level of 100 mK you would run the following commands:
 
 .. code:: bash
@@ -120,7 +122,7 @@ Two other files of interest are:
 
 - fbf_utilities.py: which defines IO functions
   needed by the three scripts and a utility function to assemble the data
-  simulators.
+  simulators for the noise-only and noisy-signal model.
 - configuration.yaml: which defines several parameters used in the code
   including the experimental frequency resolution, the priors on the
   astrophysical parameters of the global 21-cm signal model, and parameters
@@ -129,8 +131,10 @@ Two other files of interest are:
 
 The various figures produced in the analysis are stored in the
 figures_and_results directory alongside the timing_data to assess the
-performance of the methodology. The figures and data generated in our
-analysis are provided in this repository for reference.
+performance of the methodology and some summary statistics of the evidence
+networks performance. The figures and data generated in the
+analysis for `Gessey-Jones et al. (2023) <TBD>`__. are provided in this
+repository for reference.
 
 Licence and Citation
 --------------------
