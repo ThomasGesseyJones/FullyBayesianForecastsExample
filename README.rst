@@ -18,7 +18,34 @@ Overview
    :target: https://github.com/ThomasGesseyJones/ErrorAffirmations/blob/main/LICENSE
    :alt: License information
 
-Example of a fully bayesian forecasts using an evidence network applied to 21-cm cosmology.
+Example of a Fully Bayesian Forecast using an `Evidence Network <https://ui.adsabs.harvard.edu/abs/2023arXiv230511241J/abstract>`__.
+This code also serves to replicate the analysis presented in
+`Gessey-Jones et al. (2023) <TBD>`__.
+It thus serves the dual purposes of providing an example code base others
+can modify for their own Fully Bayesian Forecasts and providing a
+reproducible analysis for the letter.
+
+The overall goal of the code is to produce a Fully Bayesian Forecast for
+the chance of a `REACH <https://ui.adsabs.harvard.edu/abs/2022NatAs...6..984D/abstract>`__ like experiment
+detecting the 21-cm global signal, given a noise level. It also produces
+figures showing how this conclusion changes with fixed astrophysical parameters
+and provides a way to validate the forecast through blind coverage
+tests and comparison to `PolyChord <https://ui.adsabs.harvard.edu/abs/2015MNRAS.453.4384H/abstract>`__.
+
+
+
+Installation
+------------
+
+As an example analysis code the repository is intended to be installed locally
+by cloning the repository. To do this run the following command in the terminal
+
+.. code:: bash
+
+    git clone git@github.com:ThomasGesseyJones/FullyBayesianForecastsExample.git
+
+This will create a local copy of the repository. The three main scripts can
+then be run from the terminal (see below).
 
 
 Licence and Citation
@@ -35,6 +62,10 @@ If you are using Bibtex you can use the following to cite the letter
 .. code:: bibtex
 
     TBD
+
+Note some of the packages used (see below) in this code have their own licenses that
+require citation when used for academic purposes (e.g. `globalemu <https://github.com/htjb/globalemu>`__ and
+`pypolychord <https://github.com/PolyChord/PolyChordLite>`__). Please check the licenses of these packages for more details.
 
 
 Requirements
