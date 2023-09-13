@@ -29,11 +29,11 @@ This repository thus serves the dual purposes of providing an example code base 
 can modify to perform their own fully Bayesian forecasts and also providing a
 reproducible analysis pipeline for the letter.
 
-The overall goal of the code is to produce a fully Bayesian forecast for
+The overall goal of the code is to produce a fully Bayesian forecast of
 the chance of a `REACH <https://ui.adsabs.harvard.edu/abs/2022NatAs...6..984D/abstract>`__-like experiment
 making a significant detection of the 21-cm global signal, given a noise level. It also produces
 figures showing how this conclusion changes with different astrophysical parameter values
-and provides a way to validate the forecast through blind coverage
+and validates the forecast through blind coverage
 tests and comparison to `PolyChord <https://ui.adsabs.harvard.edu/abs/2015MNRAS.453.4384H/abstract>`__.
 
 
