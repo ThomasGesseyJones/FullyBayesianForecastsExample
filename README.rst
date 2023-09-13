@@ -56,8 +56,9 @@ Structure and Usage
 -------------------
 
 The code is split into two main parts. The first part is the
-modules which provide general functionality for the code. The second part
-is the scripts which run the analysis.
+modules which provide the general functionality of evidence networks,
+data simulators, and prior samplers. The second part
+is the scripts which run the fully Bayesian forecast.
 
 There are three modules:
 
