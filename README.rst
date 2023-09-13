@@ -30,7 +30,7 @@ the `letter <TBD>`__ ::
 
    TBD
 
-Bibtex entry for the letter
+If you are using Bibtex you can use the following to cite the letter
 
 .. code:: bibtex
 
@@ -62,3 +62,14 @@ for reproducibility.
 
 Additional packages that were used for linting, versioning, and pre-commit hooks
 are also listed in the requirements.txt file.
+
+Issues and Questions
+--------------------
+
+If you have any issues or questions about the code please raise an
+`issue <https://github.com/ThomasGesseyJones/FullyBayesianForecastsExample/issues>`__
+on the github page.
+
+Alternatively you can contact the author directly at
+`tg400@cam.ac.uk <mailto:tg400@cam.ac.uk>`__.
+
