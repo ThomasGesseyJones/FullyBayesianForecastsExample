@@ -78,10 +78,13 @@ There are three modules included in the repository:
 
 These three modules are used in the three analysis scripts:
 
-- verification_with_polychord.py: This script generates a range of mock data sets, and then evaluates the Bayes
-  ratio between the noise-only model and the noise + global signal model using
-  Polychord. These results are then stored in the verification_data directory
-  for later comparison with the results from the evidence network. It should
+- verification_with_polychord.py: This script generates a range of mock data
+  sets from both the noise-only model and the noisy-signal model, and then
+  performs a Bayesian analysis on each of them.
+  Evaluating the Bayes ratio between the two models of the data
+  using Polychord. These results are then stored in the verification_data directory
+  for later comparison with the results from the evidence network to
+  verify its accuracy in computing the Bayes ratio. It should
   be run first.
 - train_evidence_network.py: This script builds the evidence network and
   data simulators, then trains the evidence network. Once trained it
