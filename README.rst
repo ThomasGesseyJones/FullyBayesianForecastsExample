@@ -85,18 +85,19 @@ These three modules are used in the three analysis scripts:
   using Polychord. These results are then stored in the verification_data directory
   for later comparison with the results from the evidence network to
   verify its accuracy. It should be run first, ideally in parallel.
-- train_evidence_network.py: This script builds the evidence network and
-  data simulators, then trains the evidence network. Once trained it
-  stores the evidence network in the models directory, then runs a blind
+- train_evidence_network.py: This script builds the evidence network object and
+  the data simulator functions, then trains the evidence network. Once trained
+  it stores the evidence network in the models directory, then runs a blind
   coverage test on the network and validates its performance against the
   Polychord Bayes ratio evaluations from the previous script. It should
   be run second.
 - visualize_forecasts.py: This script loads the evidence network from the
   models directory and uses it to forecast the chance of a REACH-like
-  experiment detecting the 21-cm global signal. It then plots this result
+  experiment detecting the 21-cm global signal by applying it to many
+  data sets generated from the noisy-signal model. It then plots this result
   for fixed astrophysical parameters as in Figure 1 of the letter. This is
-  done for detection significance thresholds of 2, 3 and 5 sigma. It should
-  be run last.
+  done for detection significance thresholds of 2, 3 and 5 sigma. Selected
+  numerical values are also output to a .txt file. It should be run last.
 
 
 All three scripts have docstrings describing their role in more detail, as
