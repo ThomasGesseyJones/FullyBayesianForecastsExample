@@ -64,16 +64,17 @@ There are three modules included in the repository:
 
 - evidence_networks: This module contains the code for the evidence network
   class. This class is used to build the evidence network used in the forecasts.
-  The module also provides an implementation of the l-POP loss function.
+  The module also provides an implementation of the l-POP exponential loss
+  function.
   See the class docstring for more details of its capabilities and usage.
 - priors: This module contains the code to generate functions that
-  sample standard parameter prior distributions. These include
+  sample standard prior distributions. These include
   uniform, log-uniform, Gaussian, and truncated Gaussian priors.
 - simulators: This module define simulators. In our code these are functions
   that take a number of simulations and return that number of mock data
   simulations alongside the values of any parameters that were used in the
   simulations. Submodules of this module define functions to generate specific
-  simulators, for models with noise and models with a 21-cm global signal and
+  simulators for models with noise and models with a 21-cm global signal and
   noise.
 
 These three modules are then used in the three scripts:
