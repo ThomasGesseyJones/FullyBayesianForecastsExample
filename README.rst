@@ -19,7 +19,7 @@ Overview
    :alt: License information
 
 Example of a Fully Bayesian Forecast using an `Evidence Network <https://ui.adsabs.harvard.edu/abs/2023arXiv230511241J/abstract>`__.
-This code also serves to replicate the analysis presented in
+This code also replicates the analysis presented in
 `Gessey-Jones et al. (2023) <TBD>`__.
 It thus serves the dual purposes of providing an example code base others
 can modify for their own Fully Bayesian Forecasts and providing a
