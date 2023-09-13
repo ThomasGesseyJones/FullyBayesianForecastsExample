@@ -84,8 +84,7 @@ These three modules are used in the three analysis scripts:
   Evaluating the Bayes ratio between the two models of the data
   using Polychord. These results are then stored in the verification_data directory
   for later comparison with the results from the evidence network to
-  verify its accuracy in computing the Bayes ratio. It should
-  be run first.
+  verify its accuracy. It should be run first, ideally in parallel.
 - train_evidence_network.py: This script builds the evidence network and
   data simulators, then trains the evidence network. Once trained it
   stores the evidence network in the models directory, then runs a blind
