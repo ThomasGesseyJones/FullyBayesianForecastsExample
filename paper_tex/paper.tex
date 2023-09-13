@@ -112,7 +112,7 @@ Within a Bayesian paradigm, arguably the most accurate forecasting technique is 
 However, such an analysis is typically computationally costly, limiting its application to a few mock data realizations, which may lead to erroneous conclusions if the mock data is not representative of reality.
 Hence, Fisher forecasts~\citep{Fisher_1922} are commonly employed across astronomy and astrophysics~\citep{Tegmark_1997, DETF, Trotta_2007b, 2007_Seo, Vallisneri_2008, More_2013, DiDio_2014, Zhai_2017, Bonvin_2018, Simons, Euclid_2020, dAssignies_2023, Mason_2023} to cover the potential data space and investigate how conclusions vary.
 Unfortunately, the Gaussianity assumption Fisher forecasts rely upon does not always hold, limiting their reliability~\citep[e.g.][]{Perotto_2006, Wolz_2012}.
-Furthermore, Fisher forecasts can only be used on model comparison forecasts for nested models, limiting their applicability~\citep{Trotta_2007}. 
+Furthermore, Fisher forecasts can only be used for model comparison forecasts on nested models (when one of the models is a special case of the other), limiting their applicability~\citep{Trotta_2007}. 
 
 
 In this letter, we argue traditional Bayesian forecasting techniques break a central tenant of Bayesian statistics by drawing conclusions based on a small number of fiducial parameter values. 
@@ -164,7 +164,8 @@ which can be compared to a statistical threshold to determine if one model is si
 
 
 With the mathematical notation of Bayesian analysis established, we can return to the central topic of this letter; forecasts.
-A traditional Bayesian forecast for if two models could be distinguished by a proposed experiment first establishes the models and corresponding likelihoods.
+A traditional Bayesian forecast for whether a proposed experiment could distinguish between two models goes through the following steps. 
+First, the models and corresponding likelihoods are established.
 Then, mock data is simulated from one of the models by choosing some fiducial parameter values $\Tilde{\theta}$, adding noise $\eta$, and experimental effects.
 $\Z$ is evaluated for each model treating the mock data as you would actual observations from which $\br$ (or equivalently $P(M_{\rm i}| D)$) is calculated. 
 Finally, $\br$ is compared to some condition to determine if the favouring of a model is statistically significant and so the models are distinguishable.
@@ -302,7 +303,7 @@ With an almost 100\% chance of a 3\,$\sigma$ detection for $f_{*} >0.001$ and $f
 This strong variation in definitive detection chances retroactively provides further motivation for fully Bayesian forecasts as we see the conclusion drawn would be highly sensitive to the fiducial global 21-cm signal parameters chosen for a traditional Bayesian forecast. 
 
 \begin{figure}
-\includegraphics{figures/detectability_triangle_3_sigma_noise_0.0790_K.pdf}
+\includegraphics{detectability_triangle_3_sigma_noise_0.0790_K.pdf}
     \caption{Triangle plot depicting the probability of a global 21-cm signal detection at $\geq 3$\,$\sigma$ statistical significance, by an experiment covering redshift $7.5$ to $28.0$, with frequency resolution $\Delta \nu = 1$\,MHz, and residual white noise of \mbox{$\sigma_{\rm noise} = 0.079$\,K}.
 The diagonal shows the total probability of a detection marginalized over noise realizations and the parameter space except for one fixed parameter, and the below diagonal is the equivalent with two fixed parameters. 
 The total detection probability with no parameters fixed was $65.2$\%.
