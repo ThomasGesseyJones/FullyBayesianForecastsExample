@@ -131,7 +131,8 @@ Two other files of interest are:
   including the experimental frequency resolution, the priors on the
   astrophysical parameters of the global 21-cm signal model, and parameters
   that control which astrophysical parameters are plotted in the forecast
-  figures.
+  figures. If you change the priors or resolution the entire pipeline
+  needs to be rerun to get accurate results.
 
 The various figures produced in the analysis are stored in the
 figures_and_results directory alongside the timing_data to assess the
