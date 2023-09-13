@@ -69,7 +69,7 @@ There are three modules included in the repository:
   See the class docstring for more details of its capabilities and usage.
 - priors: This module contains the code to generate functions that
   sample standard prior distributions. These include
-  uniform, log-uniform, Gaussian, and truncated Gaussian priors.
+  uniform, log-uniform, and Gaussian priors.
 - simulators: This module defines simulators. In our code, these are functions
   that take a number of data simulations to run and return that number of mock data
   simulations alongside the values of any parameters that were used in the
