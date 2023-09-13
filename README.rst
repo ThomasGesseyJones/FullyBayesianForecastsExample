@@ -30,7 +30,7 @@ can modify to perform their own fully Bayesian forecasts and also providing a
 reproducible analysis pipeline for the letter.
 
 The overall goal of the code is to produce a fully Bayesian forecast for
-the chance of a `REACH <https://ui.adsabs.harvard.edu/abs/2022NatAs...6..984D/abstract>`__ like experiment
+the chance of a `REACH <https://ui.adsabs.harvard.edu/abs/2022NatAs...6..984D/abstract>`__-like experiment
 making a significant detection of the 21-cm global signal, given a noise level. It also produces
 figures showing how this conclusion changes with fixed astrophysical parameters
 and provides a way to validate the forecast through blind coverage
