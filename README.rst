@@ -60,7 +60,7 @@ modules which provide the general functionality of evidence networks,
 data simulators, and prior samplers. The second part
 is the scripts which run the fully Bayesian forecast.
 
-There are three modules:
+There are three modules included in the repository:
 
 - evidence_networks: This module contains the code for the evidence network
   class. This class is used to build the evidence network used in the forecasts.
