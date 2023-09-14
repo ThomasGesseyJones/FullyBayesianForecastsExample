@@ -9,7 +9,7 @@ Overview
 :Author: Thomas Gessey-Jones
 :Version: 0.1.2
 :Homepage: https://github.com/ThomasGesseyJones/FullyBayesianForecastsExample
-:Letter: TBD
+:Letter: https://arxiv.org/abs/2309.06942
 
 .. image:: https://img.shields.io/badge/python-3.8-blue.svg
    :target: https://www.python.org/downloads/
@@ -17,14 +17,14 @@ Overview
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://github.com/ThomasGesseyJones/ErrorAffirmations/blob/main/LICENSE
    :alt: License information
-.. image:: https://img.shields.io/badge/arXiv-2108.07282-b31b1b.svg?style=flat
-    :target: https://arxiv.org/abs/2108.07282
+.. image:: https://img.shields.io/badge/arXiv-2309.06942-b31b1b.svg?style=flat
+    :target: https://arxiv.org/abs/2309.06942
     :alt: arXiv link
 
 
 Example of a fully Bayesian forecast performed using an `Evidence Network <https://ui.adsabs.harvard.edu/abs/2023arXiv230511241J/abstract>`__.
 This code also replicates the analysis of
-`Gessey-Jones et al. (2023) <TBD>`__.
+`Gessey-Jones et al. (2023) <https://arxiv.org/abs/2309.06942>`__.
 This repository thus serves the dual purposes of providing an example code base others
 can modify to perform their own fully Bayesian forecasts and also providing a
 reproducible analysis pipeline for the letter.
@@ -111,7 +111,7 @@ scripts can be run from the terminal using the following commands:
     python visualize_forecasts.py
 
 to run with the default noise level of 79 mK and replicate the
-analysis from `Gessey-Jones et al. (2023) <TBD>`__.
+analysis from `Gessey-Jones et al. (2023) <https://arxiv.org/abs/2309.06942>`__.
 Alternatively you can pass
 the scripts a command line argument to specify the experiments noise level in K. For example
 to run with a noise level of 100 mK you would run the following commands:
@@ -138,7 +138,7 @@ The various figures produced in the analysis are stored in the
 figures_and_results directory alongside the timing_data to assess the
 performance of the methodology and some summary statistics of the evidence
 networks performance. The figures and data generated in the
-analysis for `Gessey-Jones et al. (2023) <TBD>`__. are provided in this
+analysis for `Gessey-Jones et al. (2023) <https://arxiv.org/abs/2309.06942>`__. are provided in this
 repository for reference.
 
 Licence and Citation
@@ -146,7 +146,7 @@ Licence and Citation
 
 The software is free to use on the MIT open source license.
 If you use the software for academic purposes then we request that you cite
-the `letter <TBD>`__ ::
+the `letter <https://arxiv.org/abs/2309.06942>`__ ::
 
   Gessey-Jones, T. and W. J. Handley. “Fully Bayesian Forecasts with Evidence
   Networks.” (2023). arXiv:2309.06942
