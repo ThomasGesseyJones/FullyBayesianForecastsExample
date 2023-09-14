@@ -148,13 +148,27 @@ The software is free to use on the MIT open source license.
 If you use the software for academic purposes then we request that you cite
 the `letter <TBD>`__ ::
 
-   TBD
+  Gessey-Jones, T. and W. J. Handley. “Fully Bayesian Forecasts with Evidence
+  Networks.” (2023). arXiv:2309.06942
 
 If you are using Bibtex you can use the following to cite the letter
 
 .. code:: bibtex
 
-    TBD
+  @ARTICLE{GesseyJones2023,
+           author = {{Gessey-Jones}, T. and {Handley}, W.~J.},
+            title = "{Fully Bayesian Forecasts with Evidence Networks}",
+          journal = {arXiv e-prints},
+         keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, Astrophysics - Cosmology and Nongalactic Astrophysics, General Relativity and Quantum Cosmology},
+             year = 2023,
+            month = sep,
+              eid = {arXiv:2309.06942},
+            pages = {arXiv:2309.06942},
+              doi = {10.48550/arXiv.2309.06942},
+    archivePrefix = {arXiv},
+           eprint = {2309.06942},
+     primaryClass = {astro-ph.IM}
+  }
 
 Note some of the packages used (see below) in this code have their own licenses that
 require citation when used for academic purposes (e.g. `globalemu <https://github.com/htjb/globalemu>`__ and
