@@ -236,3 +236,61 @@ def generate_global_signal_simulator(
 
         return signals, params
     return signal_simulator
+
+
+def generate_foreground_simulator(
+        redshifts: np.ndarray,
+        *coefficient_samplers: Callable
+) -> Simulator:
+    """Return a simulator function for the foreground model.
+
+    Parameters
+    ----------
+    redshifts : np.ndarray
+        The redshifts at which the foreground model will be evaluated.
+    coefficient_samplers : Iterable[Callable]
+        Functions, that return samples of the coefficients for the foreground
+        model. The order of the foreground model is set implicitly by the size
+        of this iterable.
+
+    Returns
+    -------
+    foreground_simulator : Callable
+        Function that takes a number of data simulations and returns
+        that number of foreground models (in K) as an array
+        plus the corresponding parameters as a dataframe.
+    """
+    # Convert redshifts to frequencies in MHz
+    frequencies_mhz = FREQ_21CM_MHZ / (1 + redshifts)
+
+    # Define the simulator function
+    def foreground_simulator(num_sims: int) -> Tuple[np.ndarray, DataFrame]:
+        """Simulate the foreground model.
+
+        Parameters
+        ----------
+        num_sims : int
+            The number of simulations to run
+
+        Returns
+        -------
+        foregrounds : np.ndarray
+            The simulated foreground models (in K) as an array
+        parameters : DataFrame
+            The corresponding foreground coefficients as a dataframe.
+        """
+        # Sample the coefficients
+        coefficients = np.array([sampler(num_sims) for sampler in
+                                 coefficient_samplers])
+
+        # Run the foreground model
+        foregrounds = foreground_model(frequencies_mhz, coefficients).T
+
+        # Convert coefficients to DataFrame
+        params = DataFrame(coefficients.T,
+                           columns=[f'a_{i}' for i in
+                                    range(coefficients.shape[0])])
+
+        return foregrounds, params
+
+    return foreground_simulator
