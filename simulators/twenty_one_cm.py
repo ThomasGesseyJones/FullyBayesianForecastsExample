@@ -97,6 +97,64 @@ def global_signal_experiment_measurement_redshifts(
     return redshifts
 
 
+# Foreground model
+def foreground_model(
+        frequencies_mhz: np.ndarray,
+        coefficients: np.ndarray,
+        lower_norm_freq: float = 55.0,
+        upper_norm_freq: float = 85.0,
+) -> np.ndarray:
+    """Foreground model for the sky-averaged radio temperature.
+
+    Model is that used by SARAS 3. See Singh et al. 2021 and
+    Bevins et al. 2022
+    log10(T) = sum_i a_i * R(log10(nu/1 MHz))^i,
+    where R linearly scales the frequency to -1 at lower_norm_freq and 1 at
+    upper_norm_freq.
+
+    In the original papers, the lower and upper normalization frequencies
+    are set to the bounding frequencies of their data.
+    To keep our coefficient values consistent with the literature,
+    we use the same normalization frequencies of 55 and 85 MHz by default.
+
+    Parameters
+    ----------
+    frequencies_mhz : np.ndarray
+        The frequencies at which to calculate the foreground model in MHz.
+    coefficients : np.ndarray
+        The coefficients for the foreground model (a_i). Coefficient index
+        should be the first dimension in the array. The number of coefficients
+        is set implicitly by the shape of the array.
+    lower_norm_freq : float
+        The lower normalization frequency in MHz. Default is 55 MHz.
+    upper_norm_freq : float
+        The upper normalization frequency in MHz. Default is 85 MHz.
+
+    Returns
+    -------
+    for_temp : np.ndarray
+        The foreground model for the sky-averaged radio temperature in K.
+        Frequency is in the same order as the input frequencies, and is indexed
+        along the first dimension of the array.
+    """
+    # Scale the frequencies
+    log_freq = np.log10(frequencies_mhz)
+    norm_log_freq = (2 * log_freq - np.log10(lower_norm_freq) -
+                     np.log10(upper_norm_freq)) / \
+                    (np.log10(upper_norm_freq) - np.log10(lower_norm_freq))
+
+    # Exponentiate the frequencies
+    num_coefficients = coefficients.shape[0]
+    log_freq_powers = np.array([norm_log_freq**i for i in
+                                range(num_coefficients)])
+
+    # Calculate the foreground model
+    log_temp = np.einsum('i...,ij->j...', coefficients,
+                         log_freq_powers, optimize=True)
+    for_temp = 10**log_temp
+    return for_temp
+
+
 # Simulators
 def generate_global_signal_simulator(
         global_emu_predictor: evaluate,
