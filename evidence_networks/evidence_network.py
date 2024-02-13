@@ -34,6 +34,9 @@ class EvidenceNetwork:
     alpha: float, default = 2.0
         The exponent of the leaky parity-odd transformation.
         See arXiv:2305.11241 for details.
+    data_preprocessing: Callable
+        Optional preprocessing function to use on simulated data before
+        it is passed to the network. If None no preprocessing is used.
 
     Attributes
     ----------
@@ -52,7 +55,7 @@ class EvidenceNetwork:
     """
 
     def __init__(self, simulator_0: Callable, simulator_1: Callable,
-                 alpha: float = 2.0):
+                 alpha: float = 2.0, data_preprocessing: Callable = None):
         """Initialize an EvidenceNetwork object.
 
         Parameters
@@ -70,6 +73,9 @@ class EvidenceNetwork:
         alpha: float, default = 2.0
             The exponent of the leaky parity-odd transformation used in the
             loss function and output transformation.
+        data_preprocessing: Callable
+            Optional preprocessing function to use on simulated data before
+            it is passed to the network. If None no preprocessing is used.
         """
         # Check models are compatible
         sample_data_0, _ = simulator_0(1)
@@ -80,6 +86,11 @@ class EvidenceNetwork:
         if sample_data_0.dtype != sample_data_1.dtype:
             raise ValueError("Mock data from both simulators must have the "
                              "same type.")
+
+        # Set-up preprocessing
+        self.data_preprocessing = lambda x: x
+        if data_preprocessing is not None:
+            self.data_preprocessing = data_preprocessing
 
         # Set attributes
         self.simulator_0 = simulator_0
@@ -233,12 +244,15 @@ class EvidenceNetwork:
 
         # Train model and set trained flag
         if not roll_back:
-            self.nn_model.fit(sample_data, labels_data,
-                              batch_size=batch_size,
-                              epochs=epochs,
-                              verbose=2,
-                              validation_data=(validation_sample_data,
-                                               validation_labels_data))
+            self.nn_model.fit(
+                self.data_preprocessing(sample_data),
+                labels_data,
+                batch_size=batch_size,
+                epochs=epochs,
+                verbose=2,
+                validation_data=(
+                    self.data_preprocessing(validation_sample_data),
+                    validation_labels_data))
             self.trained = True
             return
 
@@ -251,18 +265,22 @@ class EvidenceNetwork:
         minimum_epoch_num = 0
         for epoch_num in range(epochs):
             # Train for one epoch
-            self.nn_model.fit(sample_data, labels_data,
-                              batch_size=batch_size,
-                              epochs=1,
-                              verbose=2,
-                              validation_data=(validation_sample_data,
-                                               validation_labels_data))
+            self.nn_model.fit(
+                self.data_preprocessing(sample_data),
+                labels_data,
+                batch_size=batch_size,
+                epochs=1,
+                verbose=2,
+                validation_data=(
+                    self.data_preprocessing(validation_sample_data),
+                    validation_labels_data))
 
             # Check validation loss against previous minimum, and save weights
             # if new minimum
-            val_loss = self.nn_model.evaluate(validation_sample_data,
-                                              validation_labels_data,
-                                              verbose=0)[0]
+            val_loss = self.nn_model.evaluate(
+                self.data_preprocessing(validation_sample_data),
+                validation_labels_data, verbose=0)[0]
+
             if val_loss < minimum_val_loss:
                 minimum_val_loss = val_loss
                 minimum_val_loss_weights = self.nn_model.get_weights()
@@ -294,7 +312,9 @@ class EvidenceNetwork:
         if len(data.shape) == 1:
             data = data.reshape(1, -1)
 
-        nn_output = self.nn_model(tf.constant(data), training=False)
+        prepped_data = self.data_preprocessing(data)
+
+        nn_output = self.nn_model(tf.constant(prepped_data), training=False)
         return leaky_parity_odd_transformation(nn_output, self.alpha)
 
     def evaluate_bayes_ratio(self, data: np.ndarray) -> np.ndarray:
@@ -385,7 +405,8 @@ class EvidenceNetwork:
             self.get_simulated_data(num_validation_samples)
 
         # Evaluate Bayes ratio
-        bayes_ratio = self.evaluate_bayes_ratio(validation_data)
+        bayes_ratio = self.evaluate_bayes_ratio(
+            self.data_preprocessing(validation_data))
         model_1_posterior = bayes_ratio / (1 + bayes_ratio)
 
         # Bin data
