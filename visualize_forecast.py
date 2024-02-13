@@ -462,11 +462,11 @@ def main():
 
     # Set up simulators
     start = time.time()
-    noise_only_simulator, noisy_signal_simulator = assemble_simulators(
+    no_signal_simulator, with_signal_simulator = assemble_simulators(
         config_dict, sigma_noise)
 
     # Load evidence network
-    en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator,
+    en = EvidenceNetwork(no_signal_simulator, with_signal_simulator,
                          alpha=EN_ALPHA)
     network_folder = os.path.join("models", f'en_noise_{sigma_noise:.4f}')
     network_file = os.path.join(network_folder, "global_signal_en.h5")
@@ -478,7 +478,7 @@ def main():
     start = time.time()
     num_data_sets = config_dict["br_evaluations_for_forecast"]
     mock_data_w_signal, signal_params = \
-        noisy_signal_simulator(num_data_sets)
+        with_signal_simulator(num_data_sets)
     log_bayes_ratios = en.evaluate_log_bayes_ratio(mock_data_w_signal)
     end = time.time()
     add_timing_data(timing_file, 'en_fbf_log_k_evaluations',
