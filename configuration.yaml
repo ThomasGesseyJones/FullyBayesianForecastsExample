@@ -51,6 +51,34 @@ priors:
     type: uniform
     low: emu_min
     high: emu_max
+  a_0:
+    type: uniform
+    low: -10
+    high: 10
+  a_1:
+    type: uniform
+    low: -10
+    high: 10
+  a_2:
+    type: uniform
+    low: -10
+    high: 10
+  a_3:
+    type: uniform
+    low: -10
+    high: 10
+  a_4:
+    type: uniform
+    low: -10
+    high: 10
+  a_5:
+    type: uniform
+    low: -10
+    high: 10
+  a_6:
+    type: uniform
+    low: -10
+    high: 10
 #
 #
 # VERIFICATION
