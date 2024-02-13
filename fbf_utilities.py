@@ -14,7 +14,7 @@ from simulators.noise import generate_white_noise_simulator
 from simulators.twenty_one_cm import load_globalemu_emulator, \
     GLOBALEMU_INPUTS, GLOBALEMU_PARAMETER_RANGES, \
     global_signal_experiment_measurement_redshifts, \
-    generate_global_signal_simulator
+    generate_global_signal_simulator, generate_foreground_simulator
 from priors import generate_uniform_prior_sampler, \
     generate_log_uniform_prior_sampler, \
     generate_gaussian_prior_sampler, \
@@ -237,10 +237,10 @@ def assemble_simulators(
 
     Returns
     -------
-    noise_only_simulator : Simulator
-        Function that generates data from noise only model.
-    noisy_signal_simulator : Simulator
-        Function that generates data from noise + signal model.
+    no_signal_simulator : Simulator
+        Function that generates data from noise + foreground model.
+    with_signal_simulator : Simulator
+        Function that generates data from noise + foreground + signal model.
     """
     # Set-up globalemu
     globalemu_priors = create_globalemu_prior_samplers(config_dict)
@@ -248,14 +248,26 @@ def assemble_simulators(
         config_dict['frequency_resolution'])
     globalemu_predictor = load_globalemu_emulator(globalemu_redshifts)
 
-    # Build simulators
-    noise_only_simulator = generate_white_noise_simulator(
+    # Set-up foreground model
+    foreground_priors = create_foreground_prior_samplers(config_dict)
+
+    # Build no signal simulator
+    noise_simulator = generate_white_noise_simulator(
         len(globalemu_redshifts), sigma_noise)
-    noise_for_signal = generate_white_noise_simulator(
+    foreground_simulator = generate_foreground_simulator(
+        globalemu_redshifts, *foreground_priors)
+    no_signal_simulator = additive_simulator_combiner(noise_simulator,
+                                                      foreground_simulator)
+
+    # Build with signal simulator
+    noise_simulator = generate_white_noise_simulator(
         len(globalemu_redshifts), sigma_noise)
+    foreground_simulator = generate_foreground_simulator(
+        globalemu_redshifts, *foreground_priors)
     signal_simulator = generate_global_signal_simulator(
         globalemu_predictor, *globalemu_priors)
-    noisy_signal_simulator = additive_simulator_combiner(
-        signal_simulator, noise_for_signal)
+    with_signal_simulator = additive_simulator_combiner(
+        noise_simulator, foreground_simulator, signal_simulator
+    )
 
-    return noise_only_simulator, noisy_signal_simulator
+    return no_signal_simulator, with_signal_simulator
