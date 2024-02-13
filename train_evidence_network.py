@@ -2,7 +2,7 @@
 
 Script to train the Evidence Networks for the paper. The created
 Evidence Network is trained to predict the Bayes ratio between a model
-with a noisy 21-cm signal and a model with only noise. The network is
+with a 21-cm signal and a model with only noise + foreground. The network is
 saved to the `models` directory after training is complete. After training
 the network is tested using the blind coverage test and the results are
 saved to the `figures_and_results` directory. The network is also evaluated
@@ -59,14 +59,14 @@ def main():
 
     # Set-up simulators
     start = time.time()
-    noise_only_simulator, noisy_signal_simulator = assemble_simulators(
+    no_signal_simulator, signal_simulator = assemble_simulators(
         config_dict, sigma_noise)
     end = time.time()
     add_timing_data(timing_file, 'simulator_assembly', end - start)
 
     # Create and train evidence network
     start = time.time()
-    en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator,
+    en = EvidenceNetwork(no_signal_simulator, signal_simulator,
                          alpha=EN_ALPHA)
     en.train(epochs=20,
              train_data_samples_per_model=2_000_000,
@@ -181,7 +181,7 @@ def main():
                s=2, marker='x', zorder=1, alpha=0.8)
     ax.scatter(en_log_bayes_ratios[v_labels == 1],
                pc_log_bayes_ratios[v_labels == 1],
-               c='C1', label='Noisy Signal',
+               c='C1', label='With Signal',
                s=2, marker='x', zorder=1, alpha=0.8)
     min_log_z = np.min([np.min(en_log_bayes_ratios),
                         np.min(pc_log_bayes_ratios)])
