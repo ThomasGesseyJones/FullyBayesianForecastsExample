@@ -115,6 +115,31 @@ def add_timing_data(timing_file: str, entry_name: str, time_s: float):
         pkl.dump(timing_data, file)
 
 
+def _get_prior_generator(prior_type: str) -> Callable:
+    """Get the appropriate prior generator given a prior type.
+
+    Parameters
+    ----------
+    prior_type : str
+        String ID of the prior type
+
+    Returns
+    -------
+    prior_generator : Callable
+        Prior generator corresponding to the given prior type
+    """
+    if prior_type == 'uniform':
+        return generate_uniform_prior_sampler
+    elif prior_type == 'log_uniform':
+        return generate_log_uniform_prior_sampler
+    elif prior_type == 'gaussian':
+        return generate_gaussian_prior_sampler
+    elif prior_type == 'truncated_gaussian':
+        return generate_truncated_gaussian_prior_sampler
+    else:
+        raise ValueError("Unknown prior type.")
+
+
 # Priors
 def create_globalemu_prior_samplers(config_dict: dict) -> Collection[Callable]:
     """Create a prior sampler over the globalemu parameters.
@@ -144,18 +169,49 @@ def create_globalemu_prior_samplers(config_dict: dict) -> Collection[Callable]:
             elif v == 'emu_max':
                 prior_info[k] = GLOBALEMU_PARAMETER_RANGES[param][1]
 
-        # Get prior type
+        # Get prior the type
         prior_type = prior_info.pop('type')
-        if prior_type == 'uniform':
-            prior_generator = generate_uniform_prior_sampler
-        elif prior_type == 'log_uniform':
-            prior_generator = generate_log_uniform_prior_sampler
-        elif prior_type == 'gaussian':
-            prior_generator = generate_gaussian_prior_sampler
-        elif prior_type == 'truncated_gaussian':
-            prior_generator = generate_truncated_gaussian_prior_sampler
-        else:
-            raise ValueError("Unknown prior type.")
+        prior_generator = _get_prior_generator(prior_type)
+
+        # Generate prior sampler
+        prior_sampler = prior_generator(**prior_info)
+        individual_priors.append(prior_sampler)
+
+    # Combine priors
+    return individual_priors
+
+
+def create_foreground_prior_samplers(config_dict: dict
+                                     ) -> Collection[Callable]:
+    """Create a prior samplers over the foreground parameters.
+
+    Parameters
+    ----------
+    config_dict : dict
+        Dictionary containing the configuration parameters.
+
+    Returns
+    -------
+    individual_priors : Collection[Callable]
+        For each parameter, a function that takes a number of samples and
+        returns the sampled values as an array.
+    """
+    # Find the number of foreground parameters
+    foreground_parameters = [param for param in config_dict['priors'].keys() if
+                             param.startswith('a_')]
+    num_foreground_parameters = len(foreground_parameters)
+
+    # Loop over parameters constructing individual priors
+    individual_priors = []
+    for param_idx in range(num_foreground_parameters):
+        param = f'a_{param_idx}'
+
+        # Get prior info
+        prior_info = deepcopy(config_dict['priors'][param])
+
+        # Get prior the type
+        prior_type = prior_info.pop('type')
+        prior_generator = _get_prior_generator(prior_type)
 
         # Generate prior sampler
         prior_sampler = prior_generator(**prior_info)
