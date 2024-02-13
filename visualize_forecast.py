@@ -467,7 +467,7 @@ def main():
 
     # Load evidence network
     en = EvidenceNetwork(no_signal_simulator, with_signal_simulator,
-                         alpha=EN_ALPHA)
+                         alpha=EN_ALPHA, data_preprocessing=np.log10)
     network_folder = os.path.join("models", f'en_noise_{sigma_noise:.4f}')
     network_file = os.path.join(network_folder, "global_signal_en.h5")
     en.load(network_file)

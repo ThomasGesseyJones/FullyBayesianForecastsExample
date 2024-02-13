@@ -67,7 +67,7 @@ def main():
     # Create and train evidence network
     start = time.time()
     en = EvidenceNetwork(no_signal_simulator, signal_simulator,
-                         alpha=EN_ALPHA)
+                         alpha=EN_ALPHA, data_preprocessing=np.log10)
     en.train(epochs=20,
              train_data_samples_per_model=2_000_000,
              initial_learning_rate=2e-4,
