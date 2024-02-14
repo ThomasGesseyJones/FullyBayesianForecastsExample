@@ -160,7 +160,7 @@ def generate_prior(config_dict: dict,
     individual_priors = []
 
     # Construct parameter list
-    parameters_with_info = [config_dict['priors'].keys()]
+    parameters_with_info = list(config_dict['priors'].keys())
     foreground_parameters = [param for param in parameters_with_info if
                              param.startswith('a_')]
     if include_signal:
