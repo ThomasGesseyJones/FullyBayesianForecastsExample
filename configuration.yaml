@@ -53,32 +53,32 @@ priors:
     high: emu_max
   a_0:
     type: gaussian
-    mean: 3.54426
-    std: 0.007
+    mean: 3.5443
+    std: 0.0010
   a_1:
     type: gaussian
     mean: -0.2194
-    std: 0.015
+    std: 0.0021
   a_2:
     type: gaussian
     mean: 0.0012
-    std: 0.04
+    std: 0.0044
   a_3:
     type: gaussian
     mean: -0.0021
-    std: 0.06
+    std: 0.0053
   a_4:
     type: gaussian
     mean: 0.0017
-    std: 0.10
+    std: 0.0112
   a_5:
     type: gaussian
-    mean: -0.00012
-    std: 0.04
+    mean: -0.0001
+    std: 0.0045
   a_6:
     type: gaussian
-    mean: -0.008
-    std: 0.07
+    mean: -0.0008
+    std: 0.0081
 #
 #
 # VERIFICATION
