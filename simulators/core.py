@@ -44,7 +44,7 @@ def additive_simulator_combiner(
                             simulators]
         combined_data = data_plus_params[0][0]
         combined_params = data_plus_params[0][1]
-        for data, params in combined_params[1:]:
+        for data, params in data_plus_params[1:]:
             combined_params = combined_params.join(params, how='outer')
             combined_data += data
         return combined_data, combined_params
