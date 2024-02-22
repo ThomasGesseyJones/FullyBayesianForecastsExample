@@ -127,20 +127,20 @@ def foreground_model(
         along the second axis of the output array.
     """
     # Unpack and Scale the frequencies
-    d0 = coefficients[:, 0]
-    d1 = coefficients[:, 1]
-    d2 = coefficients[:, 2]
-    tau_e = coefficients[:, 3]
-    t_e = coefficients[:, 4]
+    d0 = coefficients[..., 0]
+    d1 = coefficients[..., 1]
+    d2 = coefficients[..., 2]
+    tau_e = coefficients[..., 3]
+    t_e = coefficients[..., 4]
     nu_norm = frequencies_mhz / 75.0
 
     # Reshape arrays for outer product
-    d0 = d0[:, np.newaxis]
-    d1 = d1[:, np.newaxis]
-    d2 = d2[:, np.newaxis]
-    tau_e = tau_e[:, np.newaxis]
-    t_e = t_e[:, np.newaxis]
-    nu_norm = nu_norm[np.newaxis, :]
+    d0 = d0[..., np.newaxis]
+    d1 = d1[..., np.newaxis]
+    d2 = d2[..., np.newaxis]
+    tau_e = tau_e[..., np.newaxis]
+    t_e = t_e[..., np.newaxis]
+    nu_norm = nu_norm[np.newaxis, ...]
 
     # Find the principal exponent
     exponent = -2.5 + d1 + d2 * np.log(nu_norm)
@@ -150,7 +150,7 @@ def foreground_model(
     absorption = np.exp(-tau_e * nu_norm**-2)
     emission = t_e * (1 - np.exp(-tau_e * nu_norm**-2))
 
-    return galactic_term * absorption + emission
+    return np.squeeze(galactic_term * absorption + emission)
 
 
 # Simulators
