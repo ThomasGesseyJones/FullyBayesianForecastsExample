@@ -285,7 +285,7 @@ def main():
                 include_signal=with_signal)
 
             # Set Polychord properties
-            n_dims = len(config_dict['priors']['foreground'].keys())
+            n_dims = len(config_dict['priors']['foregrounds'].keys())
             if with_signal:
                 n_dims += len(config_dict['priors']['global_signal'].keys())
             n_derived = 0
