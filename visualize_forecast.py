@@ -9,8 +9,7 @@ If using this script it is recommended to run on a GPU for speed.
 Plus some CPUs will not have enough memory for the mock data.
 
 The script can take an optional command line argument to specify the
-noise sigma in K. The default is 0.079 K. Each different noise level
-will require a different network to be trained.
+noise sigma in K. The default is 0.079 K.
 """
 
 # Required imports
@@ -458,17 +457,17 @@ def main():
     # IO
     sigma_noise = get_noise_sigma()
     config_dict = load_configuration_dict()
-    timing_file = timing_filename(sigma_noise)
+    timing_file = timing_filename()
 
     # Set up simulators
     start = time.time()
     no_signal_simulator, with_signal_simulator = assemble_simulators(
-        config_dict, sigma_noise)
+        config_dict)
 
     # Load evidence network
     en = EvidenceNetwork(no_signal_simulator, with_signal_simulator,
                          alpha=EN_ALPHA, data_preprocessing=np.log10)
-    network_folder = os.path.join("models", f'en_noise_{sigma_noise:.4f}')
+    network_folder = os.path.join("models", 'en')
     network_file = os.path.join(network_folder, "global_signal_en.h5")
     en.load(network_file)
     end = time.time()
@@ -476,6 +475,8 @@ def main():
 
     # Generate mock data for forecast and evaluate log Bayes ratio
     start = time.time()
+    no_signal_simulator, with_signal_simulator = assemble_simulators(
+        config_dict, fixed_noise_sigma=sigma_noise)
     num_data_sets = config_dict["br_evaluations_for_forecast"]
     mock_data_w_signal, signal_params = \
         with_signal_simulator(num_data_sets)

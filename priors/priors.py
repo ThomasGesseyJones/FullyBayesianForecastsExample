@@ -8,6 +8,29 @@ from typing import Callable
 import numpy as np
 
 
+# Delta function priors
+def generate_delta_prior_sampler(
+        value: float
+) -> Callable:
+    """Generate a delta function prior sampler function.
+
+    Parameters
+    ----------
+    value : float
+        The single value allowed by the prior.
+
+    Returns
+    -------
+    prior_sampler : Callable
+        Function that takes a number of samples and returns the sampled
+        values as an array.
+    """
+    def _prior_sampler(num_samples: int) -> np.ndarray:
+        """Sample from a uniform prior."""
+        return np.full(num_samples, value)
+    return _prior_sampler
+
+
 # Uniform priors
 def generate_uniform_prior_sampler(
         low: float,

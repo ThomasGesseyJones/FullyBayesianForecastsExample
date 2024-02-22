@@ -18,7 +18,8 @@ from simulators.twenty_one_cm import load_globalemu_emulator, \
 from priors import generate_uniform_prior_sampler, \
     generate_log_uniform_prior_sampler, \
     generate_gaussian_prior_sampler, \
-    generate_truncated_gaussian_prior_sampler
+    generate_truncated_gaussian_prior_sampler, \
+    generate_delta_prior_sampler
 from copy import deepcopy
 import yaml
 import os
@@ -38,7 +39,7 @@ def get_noise_sigma() -> float:
         The noise sigma in K.
     """
     parser = argparse.ArgumentParser(
-        description="Train the Evidence Network."
+        description="Forecast with Evidence Network."
     )
     parser.add_argument(
         "noise",
@@ -63,13 +64,8 @@ def load_configuration_dict() -> dict:
         return yaml.safe_load(file)
 
 
-def timing_filename(noise_sigma: float) -> str:
+def timing_filename() -> str:
     """Get the filename for the timing data.
-
-    Parameters
-    ----------
-    noise_sigma : float
-        The noise sigma in K.
 
     Returns
     -------
@@ -78,7 +74,7 @@ def timing_filename(noise_sigma: float) -> str:
     """
     folder = os.path.join('figures_and_results', 'timing_data')
     os.makedirs(folder, exist_ok=True)
-    return os.path.join(folder, f'en_noise_{noise_sigma:.4f}_timing_data.pkl')
+    return os.path.join(folder, 'timing_data.pkl')
 
 
 def clear_timing_data(timing_file: str):
@@ -141,13 +137,18 @@ def _get_prior_generator(prior_type: str) -> Callable:
 
 
 # Priors
-def create_globalemu_prior_samplers(config_dict: dict) -> Collection[Callable]:
-    """Create a prior sampler over the globalemu parameters.
+def create_prior_samplers(
+        config_dict: dict,
+        prior_subset: str) -> Collection[Callable]:
+    """Create a prior samplers over a subset of the parameters.
 
     Parameters
     ----------
     config_dict : dict
         Dictionary containing the configuration parameters.
+    prior_subset : str
+        The subset of parameters to create priors for (e.g. 'global_signal',
+        'foregrounds', or 'noise').
 
     Returns
     -------
@@ -157,50 +158,18 @@ def create_globalemu_prior_samplers(config_dict: dict) -> Collection[Callable]:
     """
     # Loop over parameters constructing individual priors
     individual_priors = []
-    for param in config_dict['priors']['global_signal'].keys():
+    for param in config_dict['priors'][prior_subset].keys():
         # Get prior info
-        prior_info = deepcopy(config_dict['priors']['global_signal'][param])
+        prior_info = deepcopy(config_dict['priors'][prior_subset][param])
 
         # Replace emu_min and emu_max with the min and max value globalemu
-        # can take for this parameter
-        for k, v in prior_info.items():
-            if v == 'emu_min':
-                prior_info[k] = GLOBALEMU_PARAMETER_RANGES[param][0]
-            elif v == 'emu_max':
-                prior_info[k] = GLOBALEMU_PARAMETER_RANGES[param][1]
-
-        # Get prior the type
-        prior_type = prior_info.pop('type')
-        prior_generator = _get_prior_generator(prior_type)
-
-        # Generate prior sampler
-        prior_sampler = prior_generator(**prior_info)
-        individual_priors.append(prior_sampler)
-
-    # Combine priors
-    return individual_priors
-
-
-def create_foreground_prior_samplers(config_dict: dict
-                                     ) -> Collection[Callable]:
-    """Create a prior samplers over the foreground parameters.
-
-    Parameters
-    ----------
-    config_dict : dict
-        Dictionary containing the configuration parameters.
-
-    Returns
-    -------
-    individual_priors : Collection[Callable]
-        For each parameter, a function that takes a number of samples and
-        returns the sampled values as an array.
-    """
-    # Loop over parameters constructing individual priors
-    individual_priors = []
-    for param in config_dict['priors']['foregrounds'].keys():
-        # Get prior info
-        prior_info = deepcopy(config_dict['priors']['foregrounds'][param])
+        # can take for this parameter (if applicable)
+        if prior_subset == 'global_signal':
+            for k, v in prior_info.items():
+                if v == 'emu_min':
+                    prior_info[k] = GLOBALEMU_PARAMETER_RANGES[param][0]
+                elif v == 'emu_max':
+                    prior_info[k] = GLOBALEMU_PARAMETER_RANGES[param][1]
 
         # Get prior the type
         prior_type = prior_info.pop('type')
@@ -217,16 +186,13 @@ def create_foreground_prior_samplers(config_dict: dict
 # Assemble simulators
 def assemble_simulators(
         config_dict: dict,
-        sigma_noise: float
-) -> Tuple[Simulator, Simulator]:
+        fixed_noise_sigma: float = None) -> Tuple[Simulator, Simulator]:
     """Assemble the simulator functions for the Evidence Network.
 
     Parameters
     ----------
     config_dict : dict
         Dictionary containing the configuration parameters.
-    sigma_noise : float
-        The noise sigma in K.
 
     Returns
     -------
@@ -236,17 +202,23 @@ def assemble_simulators(
         Function that generates data from noise + foreground + signal model.
     """
     # Set-up globalemu
-    globalemu_priors = create_globalemu_prior_samplers(config_dict)
+    globalemu_priors = create_prior_samplers(config_dict, 'global_signal')
     globalemu_redshifts = global_signal_experiment_measurement_redshifts(
         config_dict['frequency_resolution'])
     globalemu_predictor = load_globalemu_emulator(globalemu_redshifts)
 
     # Set-up foreground model
-    foreground_priors = create_foreground_prior_samplers(config_dict)
+    foreground_priors = create_prior_samplers(config_dict, 'foregrounds')
+
+    # Set-up noise model
+    if fixed_noise_sigma is None:
+        sigma_prior = create_prior_samplers(config_dict, 'noise')[0]
+    else:
+        sigma_prior = generate_delta_prior_sampler(fixed_noise_sigma)
 
     # Build no signal simulator
     noise_simulator = generate_white_noise_simulator(
-        len(globalemu_redshifts), sigma_noise)
+        len(globalemu_redshifts), sigma_prior)
     foreground_simulator = generate_foreground_simulator(
         globalemu_redshifts, *foreground_priors)
     no_signal_simulator = additive_simulator_combiner(noise_simulator,
@@ -254,7 +226,7 @@ def assemble_simulators(
 
     # Build with signal simulator
     noise_simulator = generate_white_noise_simulator(
-        len(globalemu_redshifts), sigma_noise)
+        len(globalemu_redshifts), sigma_prior)
     foreground_simulator = generate_foreground_simulator(
         globalemu_redshifts, *foreground_priors)
     signal_simulator = generate_global_signal_simulator(

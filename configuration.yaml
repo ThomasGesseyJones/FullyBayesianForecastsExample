@@ -73,6 +73,11 @@ priors:
       type: uniform
       low: 200.0   # K
       high: 2000.0 # K
+  noise:
+    sigma:
+      type: log_uniform
+      low: 0.01
+      high: 1.0
 #
 #
 # VERIFICATION

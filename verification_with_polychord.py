@@ -10,16 +10,12 @@ be run once for each noise sigma (it is not necessary to rerun this script
 if changes are made to the evidence network). The script can be run in
 parallel using MPI (which is recommended for speed). It is recommended to run
 this script on a CPU since PolyChord does not derive any benefit from GPUs.
-
-The script can take an optional command line argument to specify the
-noise sigma in K. The default is 0.079 K. This should be the same as the
-noise sigma used later in train_evidence_network.py.
 """
 
 # Required imports
 from __future__ import annotations
 from typing import Callable, Tuple
-from fbf_utilities import get_noise_sigma, load_configuration_dict, \
+from fbf_utilities import load_configuration_dict, \
     timing_filename, add_timing_data, clear_timing_data, assemble_simulators
 from simulators.twenty_one_cm import load_globalemu_emulator, \
     global_signal_experiment_measurement_redshifts, GLOBALEMU_INPUTS, \
@@ -40,7 +36,6 @@ CHAIN_DIR = "chains"
 
 # Prior, likelihood, and evidence functions
 def generate_loglikelihood(data: np.ndarray,
-                           sigma_noise: float,
                            globalemu_emulator: Callable,
                            include_signal: bool = True) -> Callable:
     """Generate a loglikelihood function.
@@ -49,8 +44,6 @@ def generate_loglikelihood(data: np.ndarray,
     ----------
     data : np.ndarray
         The mock data to evaluate the loglikelihood for.
-    sigma_noise : float
-        The noise sigma in K.
     globalemu_emulator : Callable
         The emulator for the global signal.
     include_signal : bool
@@ -71,12 +64,14 @@ def generate_loglikelihood(data: np.ndarray,
         # Global signal component
         if include_signal:
             global_signal_parameters = theta[:len(GLOBALEMU_INPUTS)]
-            foreground_parameters = theta[len(GLOBALEMU_INPUTS):]
+            foreground_parameters = theta[len(GLOBALEMU_INPUTS):-1]
+            sigma_noise = theta[-1]
             global_signal_mk, _ = globalemu_emulator(global_signal_parameters)
             global_signal_k = global_signal_mk / 1000
         else:
             global_signal_k = np.zeros_like(freqs)
-            foreground_parameters = theta
+            foreground_parameters = theta[:-1]
+            sigma_noise = theta[-1]
 
         # Foreground component
         foreground = foreground_model(freqs, foreground_parameters)
@@ -226,10 +221,9 @@ def main():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
 
-    # Get noise sigma, configuration data, and timing file
-    sigma_noise = get_noise_sigma()
+    # Configuration data, and timing file
     config_dict = load_configuration_dict()
-    timing_file = timing_filename(sigma_noise)
+    timing_file = timing_filename()
     if rank == 0:
         clear_timing_data(timing_file)
 
@@ -239,7 +233,7 @@ def main():
             config_dict['verification_data_sets_per_model']
 
         no_signal_simulator, with_signal_simulator = assemble_simulators(
-            config_dict, sigma_noise)
+            config_dict)
 
         no_signal_data, _ = no_signal_simulator(verification_ds_per_model)
         with_signal_data, _ = with_signal_simulator(verification_ds_per_model)
@@ -278,16 +272,16 @@ def main():
         # from
         log_zs = []
 
-        # Use Polychord to fit data with and without signal
+        # Use Polychord to fit data with and without the signal
         for with_signal, prior in zip([False, True],
                                       [no_signal_prior, with_signal_prior]):
             # Assemble loglikelihood function
             loglikelihood = generate_loglikelihood(
-                data, sigma_noise, globalemu_predictor,
-                include_signal=with_signal)
+                data, globalemu_predictor, include_signal=with_signal)
 
             # Set Polychord properties
             n_dims = len(config_dict['priors']['foregrounds'].keys())
+            n_dims += len(config_dict['priors']['noise'].keys())
             if with_signal:
                 n_dims += len(config_dict['priors']['global_signal'].keys())
             n_derived = 0
@@ -295,8 +289,8 @@ def main():
             settings.nlive = 25 * n_dims  # As recommended
             settings.base_dir = os.path.join(
                 CHAIN_DIR,
-                f'noise_{sigma_noise:.4f}_with_signal_{with_signal}')
-            settings.file_root = f'noise_{sigma_noise:.4f}'
+                f'noise_with_signal_{with_signal}')
+            settings.file_root = 'verification'
             settings.do_clustering = True
             settings.read_resume = False
 
@@ -351,7 +345,7 @@ def main():
     # the data
     os.makedirs('verification_data', exist_ok=True)
     np.savez(os.path.join('verification_data',
-                          f'noise_{sigma_noise:.4f}_verification_data.npz'),
+                          'verification_data.npz'),
              data=v_data,
              labels=v_labels,
              log_bayes_ratios=np.squeeze(np.array(pc_log_bayes_ratios)),

@@ -127,11 +127,11 @@ def foreground_model(
         along the second axis of the output array.
     """
     # Unpack and Scale the frequencies
-    d0 = coefficients[..., 0]
-    d1 = coefficients[..., 1]
-    d2 = coefficients[..., 2]
-    tau_e = coefficients[..., 3]
-    t_e = coefficients[..., 4]
+    d0 = np.squeeze(coefficients[..., 0])
+    d1 = np.squeeze(coefficients[..., 1])
+    d2 = np.squeeze(coefficients[..., 2])
+    tau_e = np.squeeze(coefficients[..., 3])
+    t_e = np.squeeze(coefficients[..., 4])
     nu_norm = frequencies_mhz / 75.0
 
     # Reshape arrays for outer product
@@ -261,6 +261,9 @@ def generate_foreground_simulator(
     # Convert redshifts to frequencies in MHz
     frequencies_mhz = FREQ_21CM_MHZ / (1 + redshifts)
 
+    # Set-up prior sampler
+    prior_sampler = generate_composite_prior_sampler(*coefficient_samplers)
+
     # Define the simulator function
     def foreground_simulator(num_sims: int) -> Tuple[np.ndarray, DataFrame]:
         """Simulate the foreground model.
@@ -278,14 +281,13 @@ def generate_foreground_simulator(
             The corresponding foreground coefficients as a dataframe.
         """
         # Sample the coefficients
-        coefficients = np.array([sampler(num_sims) for sampler in
-                                 coefficient_samplers])
+        coefficients = prior_sampler(num_sims)
 
         # Run the foreground model
         foregrounds = foreground_model(frequencies_mhz, coefficients)
 
         # Convert coefficients to DataFrame
-        params = DataFrame(coefficients.T,
+        params = DataFrame(coefficients,
                            columns=['d0', 'd1', 'd2', 'tau_e', 't_e'])
 
         return foregrounds, params
