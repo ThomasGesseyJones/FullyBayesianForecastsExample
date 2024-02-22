@@ -285,11 +285,9 @@ def main():
                 include_signal=with_signal)
 
             # Set Polychord properties
+            n_dims = len(config_dict['priors']['foreground'].keys())
             if with_signal:
-                n_dims = len(config_dict['priors'].keys())
-            else:
-                n_dims = len(config_dict['priors'].keys()) - \
-                         len(GLOBALEMU_INPUTS)
+                n_dims += len(config_dict['priors']['global_signal'].keys())
             n_derived = 0
             settings = PolyChordSettings(n_dims, n_derived)
             settings.nlive = 25 * n_dims  # As recommended
