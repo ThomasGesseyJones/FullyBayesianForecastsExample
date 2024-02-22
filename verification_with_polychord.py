@@ -160,46 +160,41 @@ def generate_prior(config_dict: dict,
     individual_priors = []
 
     # Construct parameter list
-    parameters_with_info = list(config_dict['priors'].keys())
-    foreground_parameters = [param for param in parameters_with_info if
-                             param.startswith('a_')]
-    if include_signal:
-        parameters = GLOBALEMU_INPUTS + foreground_parameters
-    else:
-        parameters = foreground_parameters
+    for param_list in config_dict['priors'].keys():
+        for param in config_dict['priors'][param_list].keys():
+            # Get prior info
+            prior_info = deepcopy(config_dict['priors'][param_list][param])
 
-    for param in parameters:
-        # Get prior info
-        prior_info = deepcopy(config_dict['priors'][param])
+            # Replace emu_min and emu_max with the min and max value globalemu
+            # can take for this parameter (if applicable)
+            if param in GLOBALEMU_INPUTS:
+                for k, v in prior_info.items():
+                    if v == 'emu_min':
+                        prior_info[k] = GLOBALEMU_PARAMETER_RANGES[param][0]
+                    elif v == 'emu_max':
+                        prior_info[k] = GLOBALEMU_PARAMETER_RANGES[param][1]
 
-        # Replace emu_min and emu_max with the min and max value globalemu
-        # can take for this parameter (if applicable)
-        if param in GLOBALEMU_INPUTS:
-            for k, v in prior_info.items():
-                if v == 'emu_min':
-                    prior_info[k] = GLOBALEMU_PARAMETER_RANGES[param][0]
-                elif v == 'emu_max':
-                    prior_info[k] = GLOBALEMU_PARAMETER_RANGES[param][1]
+            # Get the prior type
+            prior_type = prior_info.pop('type')
+            if prior_type == 'uniform':
+                param_prior = UniformPrior(prior_info['low'],
+                                           prior_info['high'])
+            elif prior_type == 'log_uniform':
+                param_prior = LogUniformPrior(prior_info['low'],
+                                              prior_info['high'])
+            elif prior_type == 'gaussian':
+                param_prior = GaussianPrior(prior_info['mean'],
+                                            prior_info['std'])
+            elif prior_type == 'truncated_gaussian':
+                param_prior = TruncatedGaussianPrior(prior_info['mean'],
+                                                     prior_info['std'],
+                                                     prior_info['low'],
+                                                     prior_info['high'])
+            else:
+                raise ValueError("Unknown prior type.")
 
-        # Get the prior type
-        prior_type = prior_info.pop('type')
-        if prior_type == 'uniform':
-            param_prior = UniformPrior(prior_info['low'], prior_info['high'])
-        elif prior_type == 'log_uniform':
-            param_prior = LogUniformPrior(prior_info['low'],
-                                          prior_info['high'])
-        elif prior_type == 'gaussian':
-            param_prior = GaussianPrior(prior_info['mean'], prior_info['std'])
-        elif prior_type == 'truncated_gaussian':
-            param_prior = TruncatedGaussianPrior(prior_info['mean'],
-                                                 prior_info['std'],
-                                                 prior_info['low'],
-                                                 prior_info['high'])
-        else:
-            raise ValueError("Unknown prior type.")
-
-        # Add to list of priors
-        individual_priors.append(param_prior)
+            # Add to list of priors
+            individual_priors.append(param_prior)
 
     # Define prior function
     def prior(x: np.ndarray) -> np.ndarray:

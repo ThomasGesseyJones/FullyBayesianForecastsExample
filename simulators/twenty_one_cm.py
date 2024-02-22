@@ -100,59 +100,57 @@ def global_signal_experiment_measurement_redshifts(
 # Foreground model
 def foreground_model(
         frequencies_mhz: np.ndarray,
-        coefficients: np.ndarray,
-        lower_norm_freq: float = 55.0,
-        upper_norm_freq: float = 85.0,
+        coefficients: np.ndarray
 ) -> np.ndarray:
-    """Foreground model for the sky-averaged radio temperature.
+    r"""Foreground model for the sky-averaged radio temperature.
 
-    Model is that used by SARAS 3. See Singh et al. 2021 and
-    Bevins et al. 2022
-    log10(T) = sum_i a_i * R(log10(nu/1 MHz))^i,
-    where R linearly scales the frequency to -1 at lower_norm_freq and 1 at
-    upper_norm_freq.
-
-    In the original papers, the lower and upper normalization frequencies
-    are set to the bounding frequencies of their data.
-    To keep our coefficient values consistent with the literature,
-    we use the same normalization frequencies of 55 and 85 MHz by default.
+    Implements the physical model for the sky-averaged radio temperature
+    foreground from Hills et al. (2018),
+    T = d_{0} (nu / nu_{c})^{-2.5 + d_{1} + d_{2}
+        log(nu / nu_{c})} e^{-tau_{e} (nu / nu_{c})^{-2}} +
+        T_{e} (1 - e^{-\tau_{e} (\nu / \nu_{c})^{-2}})
+    where \nu_{\rm c} is the normalization frequency 75 MHz.
 
     Parameters
     ----------
     frequencies_mhz : np.ndarray
         The frequencies at which to calculate the foreground model in MHz.
     coefficients : np.ndarray
-        The coefficients for the foreground model (a_i). Coefficient index
-        should be the first dimension in the array. The number of coefficients
-        is set implicitly by the shape of the array.
-    lower_norm_freq : float
-        The lower normalization frequency in MHz. Default is 55 MHz.
-    upper_norm_freq : float
-        The upper normalization frequency in MHz. Default is 85 MHz.
+        The coefficients for the foreground model (d_0, d_1, d_2, \tau_{e},
+        T_{e}).
 
     Returns
     -------
     for_temp : np.ndarray
         The foreground model for the sky-averaged radio temperature in K.
         Frequency is in the same order as the input frequencies, and is indexed
-        along the first dimension of the array.
+        along the second axis of the output array.
     """
-    # Scale the frequencies
-    log_freq = np.log10(frequencies_mhz)
-    norm_log_freq = (2 * log_freq - np.log10(lower_norm_freq) -
-                     np.log10(upper_norm_freq)) / \
-                    (np.log10(upper_norm_freq) - np.log10(lower_norm_freq))
+    # Unpack and Scale the frequencies
+    d0 = coefficients[:, 0]
+    d1 = coefficients[:, 1]
+    d2 = coefficients[:, 2]
+    tau_e = coefficients[:, 3]
+    t_e = coefficients[:, 4]
+    nu_norm = frequencies_mhz / 75.0
 
-    # Exponentiate the frequencies
-    num_coefficients = coefficients.shape[0]
-    log_freq_powers = np.array([norm_log_freq**i for i in
-                                range(num_coefficients)])
+    # Reshape arrays for outer product
+    d0 = d0[:, np.newaxis]
+    d1 = d1[:, np.newaxis]
+    d2 = d2[:, np.newaxis]
+    tau_e = tau_e[:, np.newaxis]
+    t_e = t_e[:, np.newaxis]
+    nu_norm = nu_norm[np.newaxis, :]
 
-    # Calculate the foreground model
-    log_temp = np.einsum('i...,ij->j...', coefficients,
-                         log_freq_powers, optimize=True)
-    for_temp = 10**log_temp
-    return for_temp
+    # Find the principal exponent
+    exponent = -2.5 + d1 + d2 * np.log(nu_norm)
+    galactic_term = d0 * nu_norm**exponent
+
+    # Ionosphere effects
+    absorption = np.exp(-tau_e * nu_norm**-2)
+    emission = t_e * (1 - np.exp(-tau_e * nu_norm**-2))
+
+    return galactic_term * absorption + emission
 
 
 # Simulators
@@ -284,12 +282,11 @@ def generate_foreground_simulator(
                                  coefficient_samplers])
 
         # Run the foreground model
-        foregrounds = foreground_model(frequencies_mhz, coefficients).T
+        foregrounds = foreground_model(frequencies_mhz, coefficients)
 
         # Convert coefficients to DataFrame
         params = DataFrame(coefficients.T,
-                           columns=[f'a_{i}' for i in
-                                    range(coefficients.shape[0])])
+                           columns=['d0', 'd1', 'd2', 'tau_e', 't_e'])
 
         return foregrounds, params
 

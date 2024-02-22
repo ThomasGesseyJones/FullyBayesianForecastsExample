@@ -12,7 +12,7 @@ import argparse
 from simulators import additive_simulator_combiner, Simulator
 from simulators.noise import generate_white_noise_simulator
 from simulators.twenty_one_cm import load_globalemu_emulator, \
-    GLOBALEMU_INPUTS, GLOBALEMU_PARAMETER_RANGES, \
+    GLOBALEMU_PARAMETER_RANGES, \
     global_signal_experiment_measurement_redshifts, \
     generate_global_signal_simulator, generate_foreground_simulator
 from priors import generate_uniform_prior_sampler, \
@@ -157,9 +157,9 @@ def create_globalemu_prior_samplers(config_dict: dict) -> Collection[Callable]:
     """
     # Loop over parameters constructing individual priors
     individual_priors = []
-    for param in GLOBALEMU_INPUTS:
+    for param in config_dict['priors']['global_signal'].keys():
         # Get prior info
-        prior_info = deepcopy(config_dict['priors'][param])
+        prior_info = deepcopy(config_dict['priors']['global_signal'][param])
 
         # Replace emu_min and emu_max with the min and max value globalemu
         # can take for this parameter
@@ -196,18 +196,11 @@ def create_foreground_prior_samplers(config_dict: dict
         For each parameter, a function that takes a number of samples and
         returns the sampled values as an array.
     """
-    # Find the number of foreground parameters
-    foreground_parameters = [param for param in config_dict['priors'].keys() if
-                             param.startswith('a_')]
-    num_foreground_parameters = len(foreground_parameters)
-
     # Loop over parameters constructing individual priors
     individual_priors = []
-    for param_idx in range(num_foreground_parameters):
-        param = f'a_{param_idx}'
-
+    for param in config_dict['priors']['foregrounds'].keys():
         # Get prior info
-        prior_info = deepcopy(config_dict['priors'][param])
+        prior_info = deepcopy(config_dict['priors']['foregrounds'][param])
 
         # Get prior the type
         prior_type = prior_info.pop('type')
