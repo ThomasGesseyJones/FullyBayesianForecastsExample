@@ -161,6 +161,8 @@ def generate_prior(config_dict: dict,
 
     # Construct parameter list
     for param_list in config_dict['priors'].keys():
+        if param_list == 'global_signal' and not include_signal:
+            continue
         for param in config_dict['priors'][param_list].keys():
             # Get prior info
             prior_info = deepcopy(config_dict['priors'][param_list][param])
