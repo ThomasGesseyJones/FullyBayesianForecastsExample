@@ -193,6 +193,8 @@ def assemble_simulators(
     ----------
     config_dict : dict
         Dictionary containing the configuration parameters.
+    fixed_noise_sigma : float, optional
+        If given, the noise sigma is fixed to this value.
 
     Returns
     -------
