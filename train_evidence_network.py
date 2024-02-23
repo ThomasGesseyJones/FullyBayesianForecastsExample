@@ -149,10 +149,10 @@ def main():
         numeric_results_file.write(
             f"{detection_sigma} sigma detection statistics:\n")
         numeric_results_file.write(
-            f"{en_percent_detected:.2f}% of signals were detectable "
+            f"{pc_percent_detected:.2f}% of signals were detectable "
             f"according to Polychord\n")
         numeric_results_file.write(
-            f"{pc_percent_detected:.2f}% of signals were detectable "
+            f"{en_percent_detected:.2f}% of signals were detectable "
             f"according to the network\n")
         numeric_results_file.write(
             f"{percent_difference:.2f}% difference in detection rate\n")
