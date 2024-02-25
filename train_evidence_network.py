@@ -12,13 +12,17 @@ available, and the comparison is plot and saved to the
 
 If using this script it is recommended to train on a GPU for speed.
 Plus some CPUs will not have enough memory to train the network.
+
+The script can take an optional command line argument to specify the
+noise sigma in K. The default is 0.020 K.
 """
 
 # Required imports
 import numpy as np
 from evidence_networks import EvidenceNetwork
 from fbf_utilities import load_configuration_dict, \
-    assemble_simulators, timing_filename, add_timing_data
+    assemble_simulators, timing_filename, add_timing_data, \
+    generate_preprocessing_function, get_noise_sigma
 import os
 import matplotlib.pyplot as plt
 import time
@@ -51,22 +55,33 @@ def main():
     """Train the Evidence Network."""
     # IO
     config_dict = load_configuration_dict()
-    timing_file = timing_filename()
+    noise_sigma = get_noise_sigma()
+    timing_file = timing_filename(noise_sigma)
 
     # Set-up simulators
     start = time.time()
     no_signal_simulator, signal_simulator = assemble_simulators(
-        config_dict)
+        config_dict, noise_sigma)
     end = time.time()
     add_timing_data(timing_file, 'simulator_assembly', end - start)
 
+    # Generate our preprocessing function
+    model_dir = os.path.join("models", f'en_noise_{noise_sigma}')
+    data_preprocessing = generate_preprocessing_function(
+        config_dict,
+        noise_sigma,
+        model_dir,
+        overwrite=True)
+
     # Create and train evidence network
     start = time.time()
-    en = EvidenceNetwork(no_signal_simulator, signal_simulator,
-                         alpha=EN_ALPHA, data_preprocessing=np.log10)
+    en = EvidenceNetwork(no_signal_simulator,
+                         signal_simulator,
+                         alpha=EN_ALPHA,
+                         data_preprocessing=data_preprocessing)
     en.train(epochs=50,
              train_data_samples_per_model=2_000_000,
-             initial_learning_rate=2e-4,
+             initial_learning_rate=2e-3,
              decay_steps=100_000,
              batch_size=1000,
              roll_back=True)
@@ -74,9 +89,10 @@ def main():
     add_timing_data(timing_file, 'network_training', end - start)
 
     # Save the network
-    network_folder = os.path.join("models", 'en')
-    os.makedirs(network_folder, exist_ok=True)
-    network_file = os.path.join(network_folder, "global_signal_en.h5")
+    os.makedirs(model_dir, exist_ok=True)
+    network_file = os.path.join(
+        model_dir,
+        f"global_signal_en_noise_{noise_sigma}.h5")
     en.save(network_file)
 
     # Perform blind coverage test
@@ -86,14 +102,16 @@ def main():
     _ = en.blind_coverage_test(plotting_ax=ax, num_validation_samples=100_000)
     figure_folder = os.path.join('figures_and_results', 'blind_coverage_tests')
     os.makedirs(figure_folder, exist_ok=True)
-    fig.savefig(os.path.join(figure_folder,
-                             'en_blind_coverage.pdf'))
+    fig.savefig(os.path.join(
+        figure_folder,
+        f'en_blind_coverage_noise_{noise_sigma}.pdf'))
     end = time.time()
     add_timing_data(timing_file, 'bct', end - start)
 
     # Load verification data
     verification_data_file = os.path.join(
-        'verification_data', 'verification_data.npz')
+        'verification_data',
+        f'verification_data_noise_{noise_sigma}.npz')
     verification_file_contents = np.load(verification_data_file)
     pc_log_bayes_ratios = verification_file_contents['log_bayes_ratios']
     v_data = verification_file_contents['data']
@@ -109,7 +127,8 @@ def main():
 
     # In case useful save the log bayes ratios computed by the network
     en_bayes_ratio_file = os.path.join(
-        'verification_data', 'en_log_k.npz')
+        'verification_data',
+        f'en_log_k_noise_{noise_sigma}.npz')
     np.savez(en_bayes_ratio_file, log_bayes_ratios=en_log_bayes_ratios)
 
     # Create output directory for results of verification comparison
@@ -118,8 +137,7 @@ def main():
     numeric_results_filename = os.path.join(
         "figures_and_results",
         "polychord_verification",
-        "polychord_verification_"
-        "en_results.txt")
+        f"polychord_verification_results_noise_{noise_sigma}.txt")
     numeric_results_file = open(numeric_results_filename, 'w')
 
     # Print results
@@ -208,7 +226,7 @@ def main():
     filename = os.path.join(
         "figures_and_results",
         "polychord_verification",
-        "polychord_verification.pdf")
+        f"polychord_verification_noise_{noise_sigma}.pdf")
     fig.savefig(filename)
     plt.close(fig)
 
