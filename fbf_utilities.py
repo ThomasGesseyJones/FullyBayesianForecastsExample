@@ -24,9 +24,11 @@ from copy import deepcopy
 import yaml
 import os
 import pickle as pkl
+import numpy as np
+from sklearn.decomposition import PCA
 
 # Parameters
-NOISE_DEFAULT = 0.079  # K, taken from REACH mission paper
+NOISE_DEFAULT = 0.020  # K
 
 
 # IO
@@ -64,8 +66,15 @@ def load_configuration_dict() -> dict:
         return yaml.safe_load(file)
 
 
-def timing_filename() -> str:
+def timing_filename(
+        noise_sigma: float
+) -> str:
     """Get the filename for the timing data.
+
+    Parameters
+    ----------
+    noise_sigma : float
+        The noise sigma in K.
 
     Returns
     -------
@@ -74,7 +83,7 @@ def timing_filename() -> str:
     """
     folder = os.path.join('figures_and_results', 'timing_data')
     os.makedirs(folder, exist_ok=True)
-    return os.path.join(folder, 'timing_data.pkl')
+    return os.path.join(folder, f'timing_data_noise_{noise_sigma}.pkl')
 
 
 def clear_timing_data(timing_file: str):
@@ -148,7 +157,7 @@ def create_prior_samplers(
         Dictionary containing the configuration parameters.
     prior_subset : str
         The subset of parameters to create priors for (e.g. 'global_signal',
-        'foregrounds', or 'noise').
+        or 'foregrounds').
 
     Returns
     -------
@@ -186,15 +195,15 @@ def create_prior_samplers(
 # Assemble simulators
 def assemble_simulators(
         config_dict: dict,
-        fixed_noise_sigma: float = None) -> Tuple[Simulator, Simulator]:
+        noise_sigma: float) -> Tuple[Simulator, Simulator]:
     """Assemble the simulator functions for the Evidence Network.
 
     Parameters
     ----------
     config_dict : dict
         Dictionary containing the configuration parameters.
-    fixed_noise_sigma : float, optional
-        If given, the noise sigma is fixed to this value.
+    noise_sigma : float
+        The noise sigma is fixed to this value (in K).
 
     Returns
     -------
@@ -213,10 +222,7 @@ def assemble_simulators(
     foreground_priors = create_prior_samplers(config_dict, 'foregrounds')
 
     # Set-up noise model
-    if fixed_noise_sigma is None:
-        sigma_prior = create_prior_samplers(config_dict, 'noise')[0]
-    else:
-        sigma_prior = generate_delta_prior_sampler(fixed_noise_sigma)
+    sigma_prior = generate_delta_prior_sampler(noise_sigma)
 
     # Build no signal simulator
     noise_simulator = generate_white_noise_simulator(
@@ -238,3 +244,82 @@ def assemble_simulators(
     )
 
     return no_signal_simulator, with_signal_simulator
+
+
+# Preprocessing function for the data
+def generate_preprocessing_function(
+    config_dict: dict,
+    noise_sigma: float,
+    model_dir: str,
+    overwrite: bool = False
+) -> Callable:
+    """Generate (or load) our preprocessing function for the data.
+
+    This function needs to be invertible, otherwise the transform will change
+    the Bayes ratio, and the network will not give the correct answer.
+
+    We use a weighted complete PCA to do this as it both normalizes the data
+    and aids the network in identifying the most important features in the
+    data.
+
+    Parameters
+    ----------
+    config_dict : dict
+        Dictionary containing the configuration parameters.
+    noise_sigma : float
+        The noise sigma in K.
+    model_dir : str
+        Directory to save the preprocessing function to (normally use the
+        same directory as the model).
+    overwrite : bool, optional
+        If True, overwrite the preprocessing function if it already exists.
+
+    Returns
+    -------
+    preprocessing_function : Callable
+        Function that preprocesses the data.
+    """
+    # Check if the model directory exists
+    os.makedirs(model_dir, exist_ok=True)
+
+    # Load or generate the PCA that is the base of the preprocessing function
+    pca_file = os.path.join(model_dir, 'preprocessing_pca.pkl')
+    if os.path.isfile(pca_file) and not overwrite:
+        # Loading if it exists and reusing it
+        with open(pca_file, 'rb') as file:
+            pca = pkl.load(file)
+    else:
+        # Create a new PCA
+        no_signal_sim, with_signal_sim = assemble_simulators(
+            config_dict, noise_sigma)
+        simulated_data, _ = no_signal_sim(50_000)
+        simulated_data_2, _ = with_signal_sim(50_000)
+        simulated_data = np.concatenate((simulated_data, simulated_data_2))
+        pca = PCA(n_components=simulated_data.shape[1])
+        pca.fit(simulated_data)
+
+        # Save the PCA for future reuse
+        with open(pca_file, 'wb') as file:
+            pkl.dump(pca, file)
+
+    def preprocessing_function(data: np.ndarray) -> np.ndarray:
+        """Preprocess the data using the PCA.
+
+        Parameters
+        ----------
+        data : np.ndarray
+            The data to preprocess.
+
+        Returns
+        -------
+        preprocessed_data : np.ndarray
+            The preprocessed data.
+        """
+        transformed_data = pca.transform(data)
+        preprocessed_data = np.einsum('ij,j->ij',
+                                      transformed_data,
+                                      1/np.sqrt(pca.explained_variance_))
+        preprocessed_data = preprocessed_data
+        return preprocessed_data
+
+    return preprocessing_function
