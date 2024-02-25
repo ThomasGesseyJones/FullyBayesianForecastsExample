@@ -76,6 +76,7 @@ class EvidenceNetwork:
         data_preprocessing: Callable
             Optional preprocessing function to use on simulated data before
             it is passed to the network. If None no preprocessing is used.
+            Function must be invertible for network to give accurate results.
         """
         # Check models are compatible
         sample_data_0, _ = simulator_0(1)
@@ -236,6 +237,11 @@ class EvidenceNetwork:
         validation_sample_data, validation_labels_data = \
             self.get_simulated_data(validation_data_samples_per_model)
 
+        # Preprocess data
+        sample_data = self.data_preprocessing(sample_data)
+        validation_sample_data = self.data_preprocessing(
+            validation_sample_data)
+
         # Store simulated data in case useful later on
         self.training_data = sample_data
         self.training_labels = labels_data
@@ -245,13 +251,13 @@ class EvidenceNetwork:
         # Train model and set trained flag
         if not roll_back:
             self.nn_model.fit(
-                self.data_preprocessing(sample_data),
+                sample_data,
                 labels_data,
                 batch_size=batch_size,
                 epochs=epochs,
                 verbose=2,
                 validation_data=(
-                    self.data_preprocessing(validation_sample_data),
+                    validation_sample_data,
                     validation_labels_data))
             self.trained = True
             return
@@ -266,19 +272,19 @@ class EvidenceNetwork:
         for epoch_num in range(epochs):
             # Train for one epoch
             self.nn_model.fit(
-                self.data_preprocessing(sample_data),
+                sample_data,
                 labels_data,
                 batch_size=batch_size,
                 epochs=1,
                 verbose=2,
                 validation_data=(
-                    self.data_preprocessing(validation_sample_data),
+                    validation_sample_data,
                     validation_labels_data))
 
             # Check validation loss against previous minimum, and save weights
             # if new minimum
             val_loss = self.nn_model.evaluate(
-                self.data_preprocessing(validation_sample_data),
+                validation_sample_data,
                 validation_labels_data, verbose=0)[0]
 
             if val_loss < minimum_val_loss:
@@ -405,8 +411,7 @@ class EvidenceNetwork:
             self.get_simulated_data(num_validation_samples)
 
         # Evaluate Bayes ratio
-        bayes_ratio = self.evaluate_bayes_ratio(
-            self.data_preprocessing(validation_data))
+        bayes_ratio = self.evaluate_bayes_ratio(validation_data)
         model_1_posterior = bayes_ratio / (1 + bayes_ratio)
 
         # Bin data
