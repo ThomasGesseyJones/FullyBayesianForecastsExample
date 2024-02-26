@@ -375,6 +375,8 @@ def main():
             # for the low noise run
             comm.Barrier()
             log_volume_correction = None
+            new_mins = None
+            new_maxs = None
             if rank == 0:
                 chains = anesthetic.read_chains(
                     os.path.join(settings.base_dir, settings.file_root))
