@@ -436,10 +436,11 @@ def main():
                 new_mins = np.array(new_mins)
                 new_maxs = np.array(new_maxs)
 
-                print('High noise fit complete')
-                print(f'log_volume_correction: {log_volume_correction}')
-                print(f'new_mins: {new_mins}')
-                print(f'new_maxs: {new_maxs}')
+                print('High noise fit complete', flush=True)
+                print(f'log_volume_correction: {log_volume_correction}',
+                      flush=True)
+                print(f'new_mins: {new_mins}', flush=True)
+                print(f'new_maxs: {new_maxs}', flush=True)
 
             # Broadcast the new mins and maxs to all ranks
             comm.Barrier()
