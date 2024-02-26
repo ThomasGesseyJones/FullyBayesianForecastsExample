@@ -284,7 +284,7 @@ def main():
     verification_ds_per_batch = \
         config_dict['verification_data_set_batch_size']
     ds_left = verification_ds_per_model - verification_ds_per_batch * batch_num
-    ds_per_model = min(verification_ds_per_model, ds_left)
+    ds_per_model = min(verification_ds_per_batch, ds_left)
     if ds_per_model <= 0:
         raise ValueError("No verification data set left to analyse.")
 
