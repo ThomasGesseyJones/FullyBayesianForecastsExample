@@ -81,12 +81,12 @@ priors:
 # network against PolyChord. Evaluated in batches of fixed size due to
 # HPC scheduling limitations.
 verification_data_sets_per_model: 100
-verification_data_set_batch_size:  50
+verification_data_set_batch_size:   5
 #
 #
 # PLOTTING
 # ========
-# Parameters that control details of the plots used to visualise the results.
+# Parameters that control details of the plots used to visualize the results.
 br_evaluations_for_forecast: 1000000
 detection_thresholds: ["2 sigma", "3 sigma", "5 sigma"]
 parameters_to_plot: ["f_star", "f_x", "tau"]
