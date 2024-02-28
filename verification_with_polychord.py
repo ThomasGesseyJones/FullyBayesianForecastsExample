@@ -349,7 +349,7 @@ def main():
                 n_dims += len(config_dict['priors']['global_signal'].keys())
             n_derived = 0
             settings = PolyChordSettings(n_dims, n_derived)
-            settings.nlive = 25 * n_dims  # As recommended
+            settings.nlive = 100 * n_dims  # As recommended
             settings.base_dir = batch_chains_dir
             settings.file_root = 'verification'
             settings.do_clustering = True
