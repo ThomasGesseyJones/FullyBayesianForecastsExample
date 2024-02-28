@@ -81,9 +81,9 @@ def main():
                          data_preprocessing=data_preprocessing)
     en.train(epochs=50,
              train_data_samples_per_model=2_000_000,
-             initial_learning_rate=2e-3,
+             initial_learning_rate=2e-2,
              decay_steps=100_000,
-             batch_size=1000,
+             batch_size=1024,
              roll_back=True)
     end = time.time()
     add_timing_data(timing_file, 'network_training', end - start)
