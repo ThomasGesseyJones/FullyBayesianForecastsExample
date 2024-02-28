@@ -15,7 +15,7 @@ The script takes two command line arguments:
 - `--batch_num`: An integer that specifies the batch of verification runs
     to perform. As many HPCs have a limit on the job length, the script
     allows the verification runs to be split into batches. The number of
-    mock data sets analysed in each batch is set in the configuration file.
+    mock data sets analyzed in each batch is set in the configuration file.
     Batches should run sequentially, starting from 0.
 - `--noise_sigma` (optional): A float value that allows you to specify the
    noise sigma in K. The default is 0.015 K. This should be the same as the
@@ -279,6 +279,7 @@ def main():
             pass
 
     # Generate verification data
+    np.random.seed(batch_num)  # For reproducibility
     verification_ds_per_model = \
         config_dict['verification_data_sets_per_model']
     verification_ds_per_batch = \
@@ -322,7 +323,8 @@ def main():
 
         # Loop over data using Polychord to evaluate the evidence
         pc_log_bayes_ratios = []
-        pc_nlike = []
+    else:
+        pc_log_bayes_ratios = None
 
     # Loop over mock data sets
     settings = None
@@ -335,12 +337,11 @@ def main():
         # Use Polychord to fit data with and without the signal
         for with_signal, prior in zip([False, True],
                                       [no_signal_prior, with_signal_prior]):
-            # Initial high noise run to roughly find the posterior peak
             # Assemble loglikelihood function
             loglikelihood = generate_loglikelihood(
                 data,
                 globalemu_predictor,
-                config_dict['high_noise_value'],
+                noise_sigma,
                 include_signal=with_signal)
 
             # Set Polychord properties
@@ -368,134 +369,17 @@ def main():
 
             # Run polychord
             comm.Barrier()
-            _ = run_polychord(loglikelihood, n_dims, n_derived, settings,
-                              prior)
-
-            # Find the peak of the posterior and use it as the starting point
-            # for the low noise run
-            comm.Barrier()
-            log_volume_correction = None
-            new_mins = None
-            new_maxs = None
-            if rank == 0:
-                chains = anesthetic.read_chains(
-                    os.path.join(settings.base_dir, settings.file_root))
-
-                # Only do this for the foregrounds as they are the only
-                # parameters expected to have large volume corrections
-                if with_signal:
-                    parameter_names = np.arange(
-                        len(config_dict['priors']['global_signal'].keys()),
-                        n_dims)
-                else:
-                    parameter_names = np.arange(n_dims)
-                param_iter = zip(
-                    parameter_names,
-                    config_dict['priors']['foregrounds'].values()
-                )
-
-                new_mins = []
-                new_maxs = []
-                log_volume_correction = 1
-                for param_name, param_info in param_iter:
-                    # Only implemented for uniform priors so skip for none
-                    # uniform priors
-                    if param_info['type'] != 'uniform':
-                        new_mins.append(None)
-                        new_maxs.append(None)
-                        continue
-                    old_min = param_info['low']
-                    old_max = param_info['high']
-
-                    # Get the 1D marginalized posterior
-                    samples = chains[param_name]
-                    weights = chains.get_weights()
-
-                    # Find the mean and std of the 1D marginalized posterior
-                    mean = np.average(samples, weights=weights)
-                    std = np.sqrt(np.average((samples - mean) ** 2,
-                                             weights=weights))
-
-                    # Set new min and max to 3 sigma from the mean
-                    # or old min and max if the new min and max are outside
-                    # the old min and max
-                    new_min = mean - 3 * std
-                    new_max = mean + 3 * std
-                    new_min = max(new_min, old_min)
-                    new_max = min(new_max, old_max)
-
-                    # Calculate the volume correction (this assumes a uniform
-                    # prior, hence the condition above)
-                    log_volume_correction += \
-                        np.log(old_max - old_min) - \
-                        np.log(new_max - new_min)
-
-                    new_mins.append(new_min)
-                    new_maxs.append(new_max)
-
-                new_mins = np.array(new_mins)
-                new_maxs = np.array(new_maxs)
-
-                print('High noise fit complete', flush=True)
-                print(f'log_volume_correction: {log_volume_correction}',
-                      flush=True)
-                print(f'new_mins: {new_mins}', flush=True)
-                print(f'new_maxs: {new_maxs}', flush=True)
-
-            # Broadcast the new mins and maxs to all ranks
-            comm.Barrier()
-            new_mins = comm.bcast(new_mins, root=0)
-            new_maxs = comm.bcast(new_maxs, root=0)
-            log_volume_correction = comm.bcast(log_volume_correction, root=0)
-
-            # Deepcopy the configuration and update with the new mins and maxs
-            new_config_dict = deepcopy(config_dict)
-            for idx, param in enumerate(
-                    new_config_dict['priors']['foregrounds']):
-                if new_mins[idx] is None:
-                    continue
-                new_config_dict['priors']['foregrounds'][param]['low'] = \
-                    new_mins[idx]
-                new_config_dict['priors']['foregrounds'][param]['high'] = \
-                    new_maxs[idx]
-
-            # Assemble new loglikelihood and prior function
-            new_loglikelihood = generate_loglikelihood(
-                data,
-                globalemu_predictor,
-                noise_sigma,
-                include_signal=with_signal)
-            new_prior = generate_prior(new_config_dict,
-                                       include_signal=with_signal)
-
-            # Reset Polychord properties
-            settings = PolyChordSettings(n_dims, n_derived)
-            settings.nlive = 25 * n_dims  # As recommended
-            settings.base_dir = batch_chains_dir
-            settings.file_root = 'verification'
-            settings.do_clustering = True
-            settings.read_resume = False
-
-            # Clear out base directory ready for the run
-            if rank == 0:
-                try:
-                    shutil.rmtree(settings.base_dir)
-                except OSError:
-                    pass
-                try:
-                    os.mkdir(settings.base_dir)
-                except OSError:
-                    pass
-
-            # Run polychord
-            comm.Barrier()
-            output = run_polychord(new_loglikelihood, n_dims,
-                                   n_derived, settings, new_prior)
+            output = run_polychord(loglikelihood, n_dims, n_derived, settings,
+                                   prior)
 
             # Append log evidence to list
             comm.Barrier()
             if rank == 0:
-                log_zs.append(output.logZ + log_volume_correction)
+                print(output, flush=True)
+                chains = anesthetic.read_chains(
+                    os.path.join(settings.base_dir, settings.file_root)
+                )
+                log_zs.append(chains.logZ())
 
         # Compute log Bayes ratio
         if rank == 0:
@@ -503,7 +387,6 @@ def main():
             log_z_with_signal = log_zs[1]
             log_bayes_ratio = log_z_with_signal - log_z_no_signal
             pc_log_bayes_ratios.append(log_bayes_ratio)
-            pc_nlike.append(output.nlike)
         comm.Barrier()
 
     # Clean up now finished
@@ -529,14 +412,12 @@ def main():
         np.savez(verification_data_file,
                  data=v_data,
                  labels=v_labels,
-                 log_bayes_ratios=np.squeeze(np.array(pc_log_bayes_ratios)),
-                 nlike=np.squeeze(np.array(pc_nlike)))
+                 log_bayes_ratios=np.squeeze(np.array(pc_log_bayes_ratios)))
         return
 
     # Load existing data
     verification_file_contents = np.load(verification_data_file)
     existing_log_bayes_ratios = verification_file_contents['log_bayes_ratios']
-    existing_nlike = verification_file_contents['nlike']
     existing_data = verification_file_contents['data']
     existing_labels = verification_file_contents['labels']
     verification_file_contents.close()
@@ -544,8 +425,6 @@ def main():
     # Append new data
     new_log_bayes_ratios = np.concatenate(
         [existing_log_bayes_ratios, np.squeeze(np.array(pc_log_bayes_ratios))])
-    new_nlike = np.concatenate(
-        [existing_nlike, np.squeeze(np.array(pc_nlike))])
     new_data = np.concatenate(
         [existing_data, v_data], axis=0)
     new_labels = np.concatenate(
@@ -555,8 +434,7 @@ def main():
     np.savez(verification_data_file,
              data=new_data,
              labels=new_labels,
-             log_bayes_ratios=new_log_bayes_ratios,
-             nlike=new_nlike)
+             log_bayes_ratios=new_log_bayes_ratios)
 
 
 if __name__ == "__main__":

@@ -82,9 +82,6 @@ priors:
 # HPC scheduling limitations.
 verification_data_sets_per_model: 100
 verification_data_set_batch_size:  50
-high_noise_value: 1.0  # Used in an initial run to find the rough region of
-                       # posterior peak. Do not use noise sigmas above this
-                       # value.
 #
 #
 # PLOTTING
