@@ -227,7 +227,8 @@ class EvidenceNetwork:
                     initial_learning_rate=initial_learning_rate,
                     decay_steps=decay_steps,
                     decay_rate=decay_rate,
-                )),
+                ),
+                clipnorm=1),
             metrics=["accuracy"],
         )
 
@@ -271,6 +272,7 @@ class EvidenceNetwork:
         minimum_epoch_num = 0
         for epoch_num in range(epochs):
             # Train for one epoch
+            print(f"Training epoch {epoch_num + 1}/{epochs}.")
             self.nn_model.fit(
                 sample_data,
                 labels_data,
