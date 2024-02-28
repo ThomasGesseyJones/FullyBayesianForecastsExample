@@ -292,8 +292,8 @@ def main():
         no_signal_simulator, with_signal_simulator = assemble_simulators(
             config_dict, noise_sigma)
 
-        no_signal_data, _ = no_signal_simulator(ds_left)
-        with_signal_data, _ = with_signal_simulator(ds_left)
+        no_signal_data, _ = no_signal_simulator(ds_per_model)
+        with_signal_data, _ = with_signal_simulator(ds_per_model)
         v_data = np.concatenate(
             [no_signal_data, with_signal_data], axis=0)
         v_labels = np.concatenate(
@@ -368,8 +368,8 @@ def main():
 
             # Run polychord
             comm.Barrier()
-            output = run_polychord(loglikelihood, n_dims,
-                                   n_derived, settings, prior)
+            _ = run_polychord(loglikelihood, n_dims, n_derived, settings,
+                              prior)
 
             # Find the peak of the posterior and use it as the starting point
             # for the low noise run
