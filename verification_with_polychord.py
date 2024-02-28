@@ -279,7 +279,6 @@ def main():
             pass
 
     # Generate verification data
-    np.random.seed(batch_num)  # For reproducibility
     verification_ds_per_model = \
         config_dict['verification_data_sets_per_model']
     verification_ds_per_batch = \
