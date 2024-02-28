@@ -28,7 +28,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 
 # Parameters
-NOISE_DEFAULT = 0.020  # K
+NOISE_DEFAULT = 0.015  # K
 
 
 # IO

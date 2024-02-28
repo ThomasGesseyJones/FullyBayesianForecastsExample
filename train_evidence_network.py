@@ -14,7 +14,7 @@ If using this script it is recommended to train on a GPU for speed.
 Plus some CPUs will not have enough memory to train the network.
 
 The script can take an optional command line argument to specify the
-noise sigma in K. The default is 0.020 K.
+noise sigma in K. The default is 0.015 K.
 """
 
 # Required imports

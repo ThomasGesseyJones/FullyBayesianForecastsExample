@@ -18,7 +18,7 @@ The script takes two command line arguments:
     mock data sets analysed in each batch is set in the configuration file.
     Batches should run sequentially, starting from 0.
 - `--noise_sigma` (optional): A float value that allows you to specify the
-   noise sigma in K. The default is 0.020 K. This should be the same as the
+   noise sigma in K. The default is 0.015 K. This should be the same as the
     noise sigma used later in train_evidence_network.py.
 """
 
