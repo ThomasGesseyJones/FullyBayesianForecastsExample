@@ -116,7 +116,6 @@ def main():
     pc_log_bayes_ratios = verification_file_contents['log_bayes_ratios']
     v_data = verification_file_contents['data']
     v_labels = verification_file_contents['labels']
-    pc_nlike = verification_file_contents['nlike']
 
     # Evaluate network on verification data
     start = time.time()
@@ -177,13 +176,6 @@ def main():
         numeric_results_file.write(
             f"{percent_changed:.2f}% of signals changed detection status\n")
         numeric_results_file.write("\n")
-
-    # And mean and total number of live point
-    pc_nlike = np.array(pc_nlike)
-    numeric_results_file.write(f"Mean number of likelihood evaluations: "
-                               f"{np.mean(pc_nlike):.4f}\n")
-    numeric_results_file.write(f"Total number of likelihood evaluations: "
-                               f"{np.sum(pc_nlike):.4f}\n")
     numeric_results_file.close()
 
     # Plot results
