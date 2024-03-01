@@ -75,6 +75,15 @@ priors:
       high: 2000.0 # K
 #
 #
+# PREPROCESSING
+# =============
+# Settings to control the preprocessing of the data before being fed into the
+# neural network.
+whitening_transform: 'ZCA'  # None, ZCA, PCA, Cholesky, ZCA-cor or PCA-cor
+covariance_samples: 100_000  # Number of samples to use when calculating the
+                             # covariance matrix for the whitening transform.
+#
+#
 # VERIFICATION
 # ============
 # Number of data sets generated from each model to use when verifying the

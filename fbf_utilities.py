@@ -258,9 +258,13 @@ def generate_preprocessing_function(
     This function needs to be invertible, otherwise the transform will change
     the Bayes ratio, and the network will not give the correct answer.
 
-    We use a weighted complete PCA to do this as it both normalizes the data
+    We use a whitening transform to do this as it both normalizes the data
     and aids the network in identifying the most important features in the
-    data.
+    data. Which whitening transform to use is set in the configuration file
+    using the 'whitening_transform' key, options are 'ZCA', 'PCA',
+    'Cholesky', 'ZCA-cor', and 'PCA-cor' (or None).
+
+    See arXiv:1512.00809
 
     Parameters
     ----------
@@ -282,25 +286,92 @@ def generate_preprocessing_function(
     # Check if the model directory exists
     os.makedirs(model_dir, exist_ok=True)
 
-    # Load or generate the PCA that is the base of the preprocessing function
-    pca_file = os.path.join(model_dir, 'preprocessing_pca.pkl')
-    if os.path.isfile(pca_file) and not overwrite:
+    # Load or generate the means vector and whitening matrix that are the basis
+    # of the preprocessing function
+    means_file = os.path.join(model_dir, 'preprocessing_means.npz')
+    whitenings_file = os.path.join(model_dir, 'preprocessing_whitenings.npz')
+    if os.path.isfile(means_file) and os.path.isfile(whitenings_file) and \
+            not overwrite:
         # Loading if it exists and reusing it
-        with open(pca_file, 'rb') as file:
-            pca = pkl.load(file)
+        with np.load(means_file) as file:
+            means = file['means']
+        with np.load(whitenings_file) as file:
+            whitening = file['whitening']
+
     else:
-        # Create a new PCA
+        # Create a new means and whitening matrix
+        whitening_setting = config_dict['whitening_transform']
+        covariance_samples = config_dict['covariance_samples']
+
+        # Get simulated data
         no_signal_sim, with_signal_sim = assemble_simulators(
             config_dict, noise_sigma)
-        simulated_data, _ = no_signal_sim(50_000)
-        simulated_data_2, _ = with_signal_sim(50_000)
+        simulated_data, _ = no_signal_sim(covariance_samples)
+        simulated_data_2, _ = with_signal_sim(covariance_samples)
         simulated_data = np.concatenate((simulated_data, simulated_data_2))
-        pca = PCA(n_components=simulated_data.shape[1])
-        pca.fit(simulated_data)
 
-        # Save the PCA for future reuse
-        with open(pca_file, 'wb') as file:
-            pkl.dump(pca, file)
+        # Calculate the means and covariance matrix
+        means = np.mean(simulated_data, axis=0)
+        covariance = np.cov(simulated_data, rowvar=False)
+
+        # Calculate the whitening (sphering) matrix
+        if whitening_setting is None:
+            # No whitening
+            whitening = np.eye(covariance.shape[0])
+            means = np.zeros_like(means)
+
+        elif whitening_setting == 'Cholesky':
+            # Cholesky decomposition whitening
+            whitening = np.linalg.inv(np.linalg.cholesky(covariance))
+
+        elif whitening_setting == 'ZCA':
+            # Zero-phase component analysis (ZCA) whitening
+            lambda_mat, u_mat = np.linalg.eigh(covariance)
+            whitening = np.dot(
+                u_mat, np.dot(np.diag(1.0 / np.sqrt(lambda_mat)), u_mat.T))
+
+        elif whitening_setting == 'PCA':
+            # Principal component analysis (PCA) whitening
+            pca = PCA(n_components=simulated_data.shape[1])
+            pca.fit(simulated_data - means)
+            unscaled_whitening = pca.components_
+            variance = pca.explained_variance_
+            variance_matrix = np.diag(1 / np.sqrt(variance))
+            whitening = np.dot(variance_matrix, unscaled_whitening)
+
+        elif whitening_setting == 'ZCA-cor':
+            # Zero-phase component analysis (ZCA) whitening with correlation
+            diagonal_variance = np.diag(covariance)
+            v_isqrt_mat = np.diag(1.0 / np.sqrt(diagonal_variance))
+            correlation = np.dot(v_isqrt_mat, np.dot(covariance, v_isqrt_mat))
+            theta_mat, g_mat = np.linalg.eigh(correlation)
+            p_isqrt = np.dot(
+                np.dot(g_mat, np.diag(1.0 / np.sqrt(theta_mat))), g_mat.T)
+            whitening = np.dot(p_isqrt, v_isqrt_mat)
+
+        elif whitening_setting == 'PCA-cor':
+            # Principal component analysis (PCA) whitening with correlation
+            diagonal_variance = np.diag(covariance)
+            standardization = 1.0 / np.sqrt(diagonal_variance)
+            standardized_data = np.einsum(
+                'ij,j->ij', simulated_data - means, standardization)
+            pca = PCA(n_components=simulated_data.shape[1])
+            pca.fit(standardized_data)
+            unscaled_whitening = pca.components_
+            variance = pca.explained_variance_
+            variance_matrix = np.diag(1 / np.sqrt(variance))
+            standardized_whitening = np.dot(variance_matrix,
+                                            unscaled_whitening)
+            whitening = np.dot(
+                standardized_whitening,
+                np.diag(standardization))
+
+        else:
+            raise ValueError("Unknown whitening transform.")
+
+        # Save the means and whitening matrix for future use
+        np.savez(means_file, means=means)
+        np.savez(whitenings_file, whitening=whitening)
 
     def preprocessing_function(data: np.ndarray) -> np.ndarray:
         """Preprocess the data using the PCA.
@@ -315,11 +386,9 @@ def generate_preprocessing_function(
         preprocessed_data : np.ndarray
             The preprocessed data.
         """
-        transformed_data = pca.transform(data)
-        preprocessed_data = np.einsum('ij,j->ij',
-                                      transformed_data,
-                                      1/np.sqrt(pca.explained_variance_))
-        preprocessed_data = preprocessed_data
+        centered_data = data - means
+        preprocessed_data = np.einsum(
+            'ij,pj->pi', whitening, centered_data)
         return preprocessed_data
 
     return preprocessing_function
