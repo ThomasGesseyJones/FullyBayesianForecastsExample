@@ -89,8 +89,8 @@ covariance_samples: 100_000  # Number of samples to use when calculating the
 # Number of data sets generated from each model to use when verifying the
 # network against PolyChord. Evaluated in batches of fixed size due to
 # HPC scheduling limitations.
-verification_data_sets_per_model: 100
-verification_data_set_batch_size:   5
+verification_data_sets_per_model: 1000
+verification_data_set_batch_size:    5
 #
 #
 # PLOTTING
