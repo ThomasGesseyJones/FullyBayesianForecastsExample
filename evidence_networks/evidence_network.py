@@ -301,6 +301,32 @@ class EvidenceNetwork:
         self.trained = True
         return
 
+    def calculate_testing_loss(
+            self,
+            num_test_samples: int = 200_000,
+            batch_size: int = 100
+    ):
+        """Calculate the testing loss for the network.
+
+        Parameters
+        ----------
+        num_test_samples: int, default=200_000
+            The number of test samples to use
+        batch_size: int, default=100
+            The batch size to use for testing
+
+        Returns
+        -------
+        testing_loss: float
+            The testing loss
+        """
+        # Create a preprocessed test data set
+        test_data, test_labels = self.get_simulated_data(num_test_samples)
+        test_data = self.data_preprocessing(test_data)
+        test_loss = self.nn_model.evaluate(
+            test_data, test_labels, batch_size=batch_size, verbose=0)[0]
+        return test_loss
+
     def evaluate_log_bayes_ratio(self, data: np.ndarray) -> np.ndarray:
         """Evaluate the log Bayes ratio between model 1 and 0.
 

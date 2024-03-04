@@ -21,15 +21,262 @@ noise sigma in K. The default is 0.015 K.
 import numpy as np
 from evidence_networks import EvidenceNetwork
 from fbf_utilities import load_configuration_dict, \
-    assemble_simulators, timing_filename, add_timing_data, \
-    generate_preprocessing_function, get_noise_sigma
+    assemble_simulators, \
+    generate_preprocessing_function, NOISE_DEFAULT
 import os
 import matplotlib.pyplot as plt
-import time
+from typing import Tuple
+import keras
+from keras import layers
 from math import erf
+import argparse
 
 # Parameters
 EN_ALPHA = 2.0
+
+
+def get_inputs():
+    """Get the inputs from the command line arguments.
+
+    Returns
+    -------
+    run_id : int
+        The run id for the training run.
+    noise_sigma : float
+        The noise sigma in K.
+    """
+    parser = argparse.ArgumentParser(
+        description="Forecast with Evidence Network."
+    )
+    parser.add_argument(
+        "run_id",
+        type=int,
+        help="The run id for the training run."
+    )
+
+    parser.add_argument(
+        "noise",
+        type=float,
+        default=NOISE_DEFAULT,
+        help="The noise sigma in K.",
+        nargs='?'
+    )
+    args = parser.parse_args()
+    return args.run_id, args.noise
+
+
+def get_settings(run_id: int) -> Tuple:
+    """Get network settings to use for this test.
+
+    Parameters
+    ----------
+    run_id : int
+        The run id for the training run.
+
+    Returns
+    -------
+    settings : Tuple
+        A tuple of the network settings to use for this test.
+    """
+    # Defaults
+    epochs = 100
+    training_size = 2_000_000
+    initial_learning_rate = 1e-2
+    decay_steps = 100_000
+    batch_size = 1024
+    for_network_width = 256
+    back_network_width = 32
+    additional_for_layers = 0
+    additional_back_layers = 0
+    whitening_transform = 'PCA'
+    whitening_number = 200_000
+    alpha = 2.0
+
+    # This particular run
+    if run_id == 1:
+        whitening_transform = 'ZCA'
+    elif run_id == 2:
+        whitening_transform = 'Cholesky'
+    elif run_id == 3:
+        whitening_transform = 'ZCA-cor'
+    elif run_id == 4:
+        whitening_transform = 'PCA-cor'
+    elif run_id == 5:
+        whitening_number = 66_000
+    elif run_id == 6:
+        whitening_number = 66_000
+        whitening_transform = 'ZCA'
+    elif run_id == 7:
+        whitening_number = 66_000
+        whitening_transform = 'Cholesky'
+    elif run_id == 8:
+        whitening_number = 66_000
+        whitening_transform = 'ZCA-cor'
+    elif run_id == 9:
+        whitening_number = 66_000
+        whitening_transform = 'PCA-cor'
+    elif run_id == 10:
+        whitening_number = 666_000
+    elif run_id == 11:
+        whitening_number = 666_000
+        whitening_transform = 'ZCA'
+    elif run_id == 12:
+        whitening_number = 666_000
+        whitening_transform = 'Cholesky'
+    elif run_id == 13:
+        whitening_number = 666_000
+        whitening_transform = 'ZCA-cor'
+    elif run_id == 14:
+        whitening_number = 666_000
+        whitening_transform = 'PCA-cor'
+    elif run_id == 15:
+        epochs = 30
+    elif run_id == 16:
+        epochs = 300
+    elif run_id == 17:
+        training_size = 600_000
+    elif run_id == 18:
+        training_size = 6_000_000
+    elif run_id == 19:
+        initial_learning_rate = 1e-4
+    elif run_id == 20:
+        initial_learning_rate = 3e-4
+    elif run_id == 21:
+        initial_learning_rate = 1e-3
+    elif run_id == 22:
+        initial_learning_rate = 3e-3
+    elif run_id == 23:
+        initial_learning_rate = 3e-2
+    elif run_id == 24:
+        initial_learning_rate = 1e-1
+    elif run_id == 25:
+        initial_learning_rate = 3e-1
+    elif run_id == 26:
+        initial_learning_rate = 1.0
+    elif run_id == 27:
+        decay_steps = 10_000
+    elif run_id == 28:
+        decay_steps = 30_000
+    elif run_id == 29:
+        decay_steps = 300_000
+    elif run_id == 30:
+        decay_steps = 1_000_000
+    elif run_id == 31:
+        batch_size = 256
+    elif run_id == 32:
+        batch_size = 512
+    elif run_id == 33:
+        batch_size = 2048
+    elif run_id == 34:
+        batch_size = 4096
+    elif run_id == 35:
+        for_network_width = 128
+    elif run_id == 36:
+        for_network_width = 512
+    elif run_id == 37:
+        additional_for_layers = 1
+        for_network_width = 128
+    elif run_id == 38:
+        additional_for_layers = 1
+    elif run_id == 39:
+        additional_for_layers = 1
+        for_network_width = 512
+    elif run_id == 40:
+        back_network_width = 16
+    elif run_id == 41:
+        back_network_width = 64
+    elif run_id == 42:
+        additional_back_layers = 1
+        back_network_width = 16
+    elif run_id == 43:
+        additional_back_layers = 1
+    elif run_id == 44:
+        additional_back_layers = 1
+        back_network_width = 64
+    elif run_id == 45:
+        additional_back_layers = 2
+        back_network_width = 16
+    elif run_id == 46:
+        additional_back_layers = 2
+    elif run_id == 47:
+        additional_back_layers = 2
+        back_network_width = 64
+    elif run_id == 48:
+        alpha = 1.5
+    elif run_id == 49:
+        alpha = 1.8
+    elif run_id == 50:
+        alpha = 2.2
+    elif run_id == 51:
+        alpha = 2.5
+    elif run_id == 52:
+        alpha = 3.0
+
+    return (epochs, training_size, initial_learning_rate, decay_steps,
+            batch_size, for_network_width, back_network_width,
+            additional_for_layers, additional_back_layers, whitening_transform,
+            whitening_number, alpha)
+
+
+def default_nn_model(
+        input_size: int,
+        for_network_width: int,
+        back_network_width: int,
+        additional_for_layers: int,
+        additional_back_layers: int
+) -> keras.Model:
+    """Return a neural network model.
+
+    This is a modified version of the model from the appendix of
+    arXiv:2305.11241.
+
+    Parameters
+    ----------
+    input_size: int
+        The number of input features
+    for_network_width: int
+        The width of the for-network
+    back_network_width: int
+        The width of the back-network
+    additional_for_layers: int
+        The number of additional layers in the for-network
+    additional_back_layers: int
+        The number of additional layers in the back-network
+
+    Returns
+    -------
+    keras.Model
+        The default neural network model
+    """
+    inputs = layers.Input(shape=(input_size,))
+    x = layers.Dense(for_network_width)(inputs)
+    x = layers.LeakyReLU()(x)
+    x = layers.BatchNormalization()(x)
+    for _ in range(additional_for_layers):
+        x = layers.Dense(for_network_width)(x)
+        x = layers.LeakyReLU()(x)
+        x = layers.BatchNormalization()(x)
+    x = layers.Dense(back_network_width)(x)
+    x = layers.LeakyReLU()(x)
+    x_batch_norm_1 = layers.BatchNormalization()(x)  # Save for skip
+    x = layers.Dense(back_network_width)(x_batch_norm_1)
+    x = layers.LeakyReLU()(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Dense(back_network_width)(x)
+    x = layers.LeakyReLU()(x)
+    x = layers.Add()([x, x_batch_norm_1])  # Skip connection
+    x = layers.BatchNormalization()(x)
+    x = layers.Dense(back_network_width)(x)
+    x = layers.LeakyReLU()(x)
+    for _ in range(additional_back_layers):
+        x = layers.Dense(back_network_width)(x)
+        x = layers.LeakyReLU()(x)
+        x = layers.BatchNormalization()(x)
+    outputs = layers.Dense(1)(x)
+
+    model = keras.Model(inputs=inputs, outputs=outputs,
+                        name="jeffrey_wandelt_23_network")
+    return model
 
 
 def sigma_to_log_k(sigma: float) -> float:
@@ -55,15 +302,20 @@ def main():
     """Train the Evidence Network."""
     # IO
     config_dict = load_configuration_dict()
-    noise_sigma = get_noise_sigma()
-    timing_file = timing_filename(noise_sigma)
+    run_id, noise_sigma = get_inputs()
+    settings = get_settings(run_id)
+
+    # Unpack settings
+    (epochs, training_size, initial_learning_rate, decay_steps, batch_size,
+     for_network_width, back_network_width, additional_for_layers,
+     additional_back_layers, whitening_transform, whitening_number,
+     alpha) = settings
+    config_dict['whitening_transform'] = whitening_transform
+    config_dict['covariance_samples'] = whitening_number
 
     # Set-up simulators
-    start = time.time()
     no_signal_simulator, signal_simulator = assemble_simulators(
         config_dict, noise_sigma)
-    end = time.time()
-    add_timing_data(timing_file, 'simulator_assembly', end - start)
 
     # Generate our preprocessing function
     model_dir = os.path.join("models", f'en_noise_{noise_sigma}')
@@ -74,19 +326,24 @@ def main():
         overwrite=True)
 
     # Create and train evidence network
-    start = time.time()
     en = EvidenceNetwork(no_signal_simulator,
                          signal_simulator,
-                         alpha=EN_ALPHA,
+                         alpha=alpha,
                          data_preprocessing=data_preprocessing)
-    en.train(epochs=50,
-             train_data_samples_per_model=2_000_000,
-             initial_learning_rate=2e-2,
-             decay_steps=100_000,
-             batch_size=1024,
-             roll_back=True)
-    end = time.time()
-    add_timing_data(timing_file, 'network_training', end - start)
+    nn_model = default_nn_model(
+        en._data_size,
+        for_network_width,
+        back_network_width,
+        additional_for_layers,
+        additional_back_layers)
+    en.train(epochs=epochs,
+             train_data_samples_per_model=training_size,
+             validation_data_samples_per_model=int(training_size*0.4),
+             initial_learning_rate=initial_learning_rate,
+             decay_steps=decay_steps,
+             batch_size=batch_size,
+             roll_back=True,
+             nn_model=nn_model)
 
     # Save the network
     os.makedirs(model_dir, exist_ok=True)
@@ -96,17 +353,15 @@ def main():
     en.save(network_file)
 
     # Perform blind coverage test
-    start = time.time()
     plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
     fig, ax = plt.subplots()
-    _ = en.blind_coverage_test(plotting_ax=ax, num_validation_samples=100_000)
+    _ = en.blind_coverage_test(plotting_ax=ax,
+                               num_validation_samples=int(training_size*0.4))
     figure_folder = os.path.join('figures_and_results', 'blind_coverage_tests')
     os.makedirs(figure_folder, exist_ok=True)
     fig.savefig(os.path.join(
         figure_folder,
-        f'en_blind_coverage_noise_{noise_sigma}.pdf'))
-    end = time.time()
-    add_timing_data(timing_file, 'bct', end - start)
+        f'en_blind_coverage_noise_{noise_sigma}_{run_id}.pdf'))
 
     # Load verification data
     verification_data_file = os.path.join(
@@ -118,16 +373,12 @@ def main():
     v_labels = verification_file_contents['labels']
 
     # Evaluate network on verification data
-    start = time.time()
     en_log_bayes_ratios = np.squeeze(en.evaluate_log_bayes_ratio(v_data))
-    end = time.time()
-    add_timing_data(timing_file, 'verification_evaluations',
-                    end - start)
 
     # In case useful save the log bayes ratios computed by the network
     en_bayes_ratio_file = os.path.join(
         'verification_data',
-        f'en_log_k_noise_{noise_sigma}.npz')
+        f'en_log_k_noise_{noise_sigma}_{run_id}.npz')
     np.savez(en_bayes_ratio_file, log_bayes_ratios=en_log_bayes_ratios)
 
     # Create output directory for results of verification comparison
@@ -136,7 +387,7 @@ def main():
     numeric_results_filename = os.path.join(
         "figures_and_results",
         "polychord_verification",
-        f"polychord_verification_results_noise_{noise_sigma}.txt")
+        f"polychord_verification_results_noise_{noise_sigma}_{run_id}.txt")
     numeric_results_file = open(numeric_results_filename, 'w')
 
     # Print results
@@ -176,6 +427,11 @@ def main():
         numeric_results_file.write(
             f"{percent_changed:.2f}% of signals changed detection status\n")
         numeric_results_file.write("\n")
+
+    # Network loss
+    test_loss = en.calculate_testing_loss(
+        int(training_size*0.4), batch_size)
+    numeric_results_file.write(f"Network testing loss: {test_loss:.4f}\n")
     numeric_results_file.close()
 
     # Plot results
@@ -218,7 +474,7 @@ def main():
     filename = os.path.join(
         "figures_and_results",
         "polychord_verification",
-        f"polychord_verification_noise_{noise_sigma}.pdf")
+        f"polychord_verification_noise_{noise_sigma}_{run_id}.pdf")
     fig.savefig(filename)
     plt.close(fig)
 
