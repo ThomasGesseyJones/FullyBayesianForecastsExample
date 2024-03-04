@@ -413,8 +413,8 @@ class EvidenceNetwork:
             self.get_simulated_data(num_validation_samples)
 
         # Evaluate Bayes ratio
-        bayes_ratio = self.evaluate_bayes_ratio(validation_data)
-        model_1_posterior = bayes_ratio / (1 + bayes_ratio)
+        log_bayes_ratio = self.evaluate_log_bayes_ratio(validation_data)
+        model_1_posterior = 1 / (1 + np.exp(-log_bayes_ratio))
 
         # Bin data
         num_model_1_in_bin = np.zeros(num_probability_bins)
@@ -428,13 +428,18 @@ class EvidenceNetwork:
             else:
                 num_model_0_in_bin[bin_index] += 1
 
+        # Drop any bins where there are no samples
+        bins_to_drop = np.where(num_model_1_in_bin + num_model_0_in_bin <
+                                min_in_bin)
+        num_model_1_in_bin = np.delete(num_model_1_in_bin, bins_to_drop)
+        num_model_0_in_bin = np.delete(num_model_0_in_bin, bins_to_drop)
+        posterior_bin_edges = np.delete(posterior_bin_edges, bins_to_drop)
+        posterior_bin_midpoints = np.delete(posterior_bin_midpoints,
+                                            bins_to_drop)
+
         # Calculate bin proportions
         bin_model_1_proportions = num_model_1_in_bin / (
                 num_model_1_in_bin + num_model_0_in_bin)
-
-        # Set bins with too few samples to NaN
-        bin_model_1_proportions[
-            num_model_1_in_bin + num_model_0_in_bin < min_in_bin] = np.nan
 
         # Optionally plot results
         if plotting_ax is None:
