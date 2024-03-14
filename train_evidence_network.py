@@ -79,138 +79,58 @@ def get_settings(run_id: int) -> Tuple:
         A tuple of the network settings to use for this test.
     """
     # Defaults
-    epochs = 100
+    epochs = 500
     training_size = 2_000_000
-    initial_learning_rate = 1e-2
+    initial_learning_rate = 1e-3
     decay_steps = 100_000
-    batch_size = 1024
+    batch_size = 8092
     for_network_width = 256
-    back_network_width = 32
+    back_network_width = 64
     additional_for_layers = 0
-    additional_back_layers = 0
-    whitening_transform = 'PCA'
-    whitening_number = 200_000
+    additional_back_layers = 2
+    whitening_transform = 'Cholesky'
+    whitening_number = 100_000
     alpha = 2.0
 
     # This particular run
-    if run_id == 1:
-        whitening_transform = 'ZCA'
+    if run_id == 0:
+        pass
+    elif run_id == 1:
+        epochs = 250
     elif run_id == 2:
-        whitening_transform = 'Cholesky'
+        epochs = 1000
     elif run_id == 3:
-        whitening_transform = 'ZCA-cor'
+        epochs = 2000
     elif run_id == 4:
-        whitening_transform = 'PCA-cor'
-    elif run_id == 5:
-        whitening_number = 66_000
-    elif run_id == 6:
-        whitening_number = 66_000
-        whitening_transform = 'ZCA'
-    elif run_id == 7:
-        whitening_number = 66_000
-        whitening_transform = 'Cholesky'
-    elif run_id == 8:
-        whitening_number = 66_000
-        whitening_transform = 'ZCA-cor'
-    elif run_id == 9:
-        whitening_number = 66_000
-        whitening_transform = 'PCA-cor'
-    elif run_id == 10:
-        whitening_number = 666_000
-    elif run_id == 11:
-        whitening_number = 666_000
-        whitening_transform = 'ZCA'
-    elif run_id == 12:
-        whitening_number = 666_000
-        whitening_transform = 'Cholesky'
-    elif run_id == 13:
-        whitening_number = 666_000
-        whitening_transform = 'ZCA-cor'
-    elif run_id == 14:
-        whitening_number = 666_000
-        whitening_transform = 'PCA-cor'
-    elif run_id == 15:
-        epochs = 30
-    elif run_id == 16:
-        epochs = 300
-    elif run_id == 17:
-        training_size = 600_000
-    elif run_id == 18:
-        training_size = 6_000_000
-    elif run_id == 19:
-        initial_learning_rate = 1e-4
-    elif run_id == 20:
-        initial_learning_rate = 3e-4
-    elif run_id == 21:
-        initial_learning_rate = 1e-3
-    elif run_id == 22:
-        initial_learning_rate = 3e-3
-    elif run_id == 23:
-        initial_learning_rate = 3e-2
-    elif run_id == 24:
-        initial_learning_rate = 1e-1
-    elif run_id == 25:
-        initial_learning_rate = 3e-1
-    elif run_id == 26:
-        initial_learning_rate = 1.0
-    elif run_id == 27:
-        decay_steps = 10_000
-    elif run_id == 28:
-        decay_steps = 30_000
-    elif run_id == 29:
-        decay_steps = 300_000
-    elif run_id == 30:
-        decay_steps = 1_000_000
-    elif run_id == 31:
-        batch_size = 256
-    elif run_id == 32:
-        batch_size = 512
-    elif run_id == 33:
-        batch_size = 2048
-    elif run_id == 34:
         batch_size = 4096
-    elif run_id == 35:
-        for_network_width = 128
-    elif run_id == 36:
-        for_network_width = 512
-    elif run_id == 37:
-        additional_for_layers = 1
-        for_network_width = 128
-    elif run_id == 38:
-        additional_for_layers = 1
-    elif run_id == 39:
-        additional_for_layers = 1
-        for_network_width = 512
-    elif run_id == 40:
-        back_network_width = 16
-    elif run_id == 41:
-        back_network_width = 64
-    elif run_id == 42:
+    elif run_id == 5:
+        batch_size = 16_384
+    elif run_id == 6:
+        batch_size = 32_768
+    elif run_id == 7:
+        back_network_width = 32
         additional_back_layers = 1
-        back_network_width = 16
-    elif run_id == 43:
-        additional_back_layers = 1
-    elif run_id == 44:
-        additional_back_layers = 1
+    elif run_id == 8:
         back_network_width = 64
-    elif run_id == 45:
-        additional_back_layers = 2
-        back_network_width = 16
-    elif run_id == 46:
-        additional_back_layers = 2
-    elif run_id == 47:
-        additional_back_layers = 2
+        additional_back_layers = 1
+    elif run_id == 9:
+        back_network_width = 128
+        additional_back_layers = 1
+    elif run_id == 10:
+        back_network_width = 32
+    elif run_id == 11:
+        back_network_width = 128
+    elif run_id == 12:
+        back_network_width = 32
+        additional_back_layers = 3
+    elif run_id == 13:
         back_network_width = 64
-    elif run_id == 48:
-        alpha = 1.5
-    elif run_id == 49:
-        alpha = 1.8
-    elif run_id == 50:
-        alpha = 2.2
-    elif run_id == 51:
-        alpha = 2.5
-    elif run_id == 52:
-        alpha = 3.0
+        additional_back_layers = 3
+    elif run_id == 14:
+        back_network_width = 128
+        additional_back_layers = 3
+    else:
+        raise ValueError(f"Run id {run_id} not recognised.")
 
     return (epochs, training_size, initial_learning_rate, decay_steps,
             batch_size, for_network_width, back_network_width,
