@@ -108,41 +108,55 @@ class EvidenceNetwork:
         self.validation_labels = None
 
     @staticmethod
-    def default_nn_model(input_size: int) -> keras.Model:
+    def default_nn_model(
+            input_size: int,
+            ensemble_size: int = 1) -> keras.Model:
         """Return a default neural network model.
 
-        This is the model from the appendix of arXiv:2305.11241.
+        This is an extended version of the model from the appendix of
+        arXiv:2305.11241.
 
         Parameters
         ----------
         input_size: int
             The number of input features
+        ensemble_size: int, default=1
+            The number of ensemble members to use
+            (average of experts)
 
         Returns
         -------
         keras.Model
             The default neural network model
         """
+        outputs = []
         inputs = layers.Input(shape=(input_size,))
-        x = layers.Dense(130)(inputs)
-        x = layers.LeakyReLU()(x)
-        x = layers.BatchNormalization()(x)
-        x = layers.Dense(16)(x)
-        x = layers.LeakyReLU()(x)
-        x_batch_norm_1 = layers.BatchNormalization()(x)  # Save for skip
-        x = layers.Dense(16)(x_batch_norm_1)
-        x = layers.LeakyReLU()(x)
-        x = layers.BatchNormalization()(x)
-        x = layers.Dense(16)(x)
-        x = layers.LeakyReLU()(x)
-        x = layers.Add()([x, x_batch_norm_1])  # Skip connection
-        x = layers.BatchNormalization()(x)
-        x = layers.Dense(16)(x)
-        x = layers.LeakyReLU()(x)
-        outputs = layers.Dense(1)(x)
+        for _ in range(ensemble_size):
+            x = layers.Dense(130)(inputs)
+            x = layers.LeakyReLU()(x)
+            x = layers.BatchNormalization()(x)
+            x = layers.Dense(16)(x)
+            x = layers.LeakyReLU()(x)
+            x_batch_norm_1 = layers.BatchNormalization()(x)  # Save for skip
+            x = layers.Dense(16)(x_batch_norm_1)
+            x = layers.LeakyReLU()(x)
+            x = layers.BatchNormalization()(x)
+            x = layers.Dense(16)(x)
+            x = layers.LeakyReLU()(x)
+            x = layers.Add()([x, x_batch_norm_1])  # Skip connection
+            x = layers.BatchNormalization()(x)
+            x = layers.Dense(16)(x)
+            x = layers.LeakyReLU()(x)
+            outputs.append(layers.Dense(1)(x))
+
+        if ensemble_size == 1:
+            outputs = outputs[0]
+        else:
+            x = layers.Concatenate()(outputs)
+            outputs = layers.Dense(1)(x)
 
         model = keras.Model(inputs=inputs, outputs=outputs,
-                            name="jeffrey_wandelt_23_network")
+                            name="default_network")
         return model
 
     def get_simulated_data(self,
@@ -187,7 +201,8 @@ class EvidenceNetwork:
               initial_learning_rate: float = 1e-4,
               decay_steps: int = 1000,
               decay_rate: float = 0.95,
-              roll_back: bool = False) -> None:
+              roll_back: bool = False,
+              ensemble_size: int = None) -> None:
         """Train the Bayes ratio network.
 
         Parameters
@@ -213,10 +228,16 @@ class EvidenceNetwork:
         roll_back: bool, default=False
             Whether to roll back the network to validation loss minimum at
             the end of training
+        ensemble_size: int, default=None
+            The number of ensemble members to use (average of experts) if using
+            the default network. If None, the default network will not use
+            ensemble averaging. Has no effect if nn_model is not None.
         """
         # Set-up NN, default from arXiv:2305.11241 appendix if not given
         if nn_model is None:
-            nn_model = self.default_nn_model(self._data_size)
+            nn_model = self.default_nn_model(
+                self._data_size,
+                ensemble_size)
         self.nn_model = nn_model
 
         # Compile model, using details from arXiv:2305.11241
