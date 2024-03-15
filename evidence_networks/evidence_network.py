@@ -132,21 +132,24 @@ class EvidenceNetwork:
         outputs = []
         inputs = layers.Input(shape=(input_size,))
         for _ in range(ensemble_size):
-            x = layers.Dense(130)(inputs)
+            x = layers.Dense(256)(inputs)
             x = layers.LeakyReLU()(x)
             x = layers.BatchNormalization()(x)
-            x = layers.Dense(16)(x)
+            x = layers.Dense(64)(x)
             x = layers.LeakyReLU()(x)
             x_batch_norm_1 = layers.BatchNormalization()(x)  # Save for skip
-            x = layers.Dense(16)(x_batch_norm_1)
+            x = layers.Dense(64)(x_batch_norm_1)
             x = layers.LeakyReLU()(x)
             x = layers.BatchNormalization()(x)
-            x = layers.Dense(16)(x)
+            x = layers.Dense(64)(x)
             x = layers.LeakyReLU()(x)
             x = layers.Add()([x, x_batch_norm_1])  # Skip connection
             x = layers.BatchNormalization()(x)
-            x = layers.Dense(16)(x)
+            x = layers.Dense(64)(x)
             x = layers.LeakyReLU()(x)
+            x = layers.Dense(64)(x)
+            x = layers.LeakyReLU()(x)
+            x = layers.BatchNormalization()(x)
             outputs.append(layers.Dense(1)(x))
 
         if ensemble_size == 1:
