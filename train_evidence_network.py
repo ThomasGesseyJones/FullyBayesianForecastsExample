@@ -85,7 +85,7 @@ def main():
              initial_learning_rate=1e-3,
              decay_steps=100_000,
              batch_size=8092,
-             roll_back=False,
+             roll_back=True,
              ensemble_size=5)
     end = time.time()
     add_timing_data(timing_file, 'network_training', end - start)
