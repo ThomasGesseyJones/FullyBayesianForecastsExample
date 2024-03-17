@@ -160,10 +160,13 @@ def default_nn_model(
     """
     inputs = layers.Input(shape=(input_size,))
     x = inputs
-    for _ in range(additional_for_layers+2):
+    for _ in range(additional_for_layers+1):
         x = layers.Dense(for_network_width)(x)
         x = layers.BatchNormalization()(x)
         x = layers.LeakyReLU()(x)
+    x = layers.Dense(back_network_width)(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.LeakyReLU()(x)
     x_batch_norm_1 = x  # Save for skip
     for _ in range(2):
         x = layers.Dense(back_network_width)(x)
