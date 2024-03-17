@@ -79,11 +79,11 @@ def get_settings(run_id: int) -> Tuple:
         A tuple of the network settings to use for this test.
     """
     # Defaults
-    epochs = 500
+    epochs = 250
     training_size = 2_000_000
     initial_learning_rate = 1e-3
     decay_steps = 100_000
-    batch_size = 8092
+    batch_size = 4096
     for_network_width = 256
     back_network_width = 64
     additional_for_layers = 0
@@ -91,51 +91,38 @@ def get_settings(run_id: int) -> Tuple:
     whitening_transform = 'Cholesky'
     whitening_number = 100_000
     alpha = 2.0
+    drop_fraction = 0.0
 
     # This particular run
     if run_id == 0:
         pass
     elif run_id == 1:
-        epochs = 250
+        drop_fraction = 0.01
     elif run_id == 2:
-        epochs = 1000
+        drop_fraction = 0.03
     elif run_id == 3:
-        epochs = 2000
+        drop_fraction = 0.05
     elif run_id == 4:
-        batch_size = 4096
+        drop_fraction = 0.1
     elif run_id == 5:
-        batch_size = 16_384
+        drop_fraction = 0.2
     elif run_id == 6:
-        batch_size = 32_768
+        drop_fraction = 0.3
     elif run_id == 7:
-        back_network_width = 32
-        additional_back_layers = 1
+        drop_fraction = 0.5
     elif run_id == 8:
-        back_network_width = 64
-        additional_back_layers = 1
+        training_size = 1_000_000
     elif run_id == 9:
-        back_network_width = 128
-        additional_back_layers = 1
+        training_size = 4_000_000
     elif run_id == 10:
-        back_network_width = 32
-    elif run_id == 11:
-        back_network_width = 128
-    elif run_id == 12:
-        back_network_width = 32
-        additional_back_layers = 3
-    elif run_id == 13:
-        back_network_width = 64
-        additional_back_layers = 3
-    elif run_id == 14:
-        back_network_width = 128
-        additional_back_layers = 3
+        training_size = 8_000_000
     else:
         raise ValueError(f"Run id {run_id} not recognised.")
 
     return (epochs, training_size, initial_learning_rate, decay_steps,
             batch_size, for_network_width, back_network_width,
             additional_for_layers, additional_back_layers, whitening_transform,
-            whitening_number, alpha)
+            whitening_number, alpha, drop_fraction)
 
 
 def default_nn_model(
@@ -143,7 +130,8 @@ def default_nn_model(
         for_network_width: int,
         back_network_width: int,
         additional_for_layers: int,
-        additional_back_layers: int
+        additional_back_layers: int,
+        dropout_fraction: float = 0
 ) -> keras.Model:
     """Return a neural network model.
 
@@ -162,6 +150,8 @@ def default_nn_model(
         The number of additional layers in the for-network
     additional_back_layers: int
         The number of additional layers in the back-network
+    dropout_fraction: float
+        The dropout fraction to use
 
     Returns
     -------
@@ -169,33 +159,27 @@ def default_nn_model(
         The default neural network model
     """
     inputs = layers.Input(shape=(input_size,))
-    x = layers.Dense(for_network_width)(inputs)
-    x = layers.LeakyReLU()(x)
-    x = layers.BatchNormalization()(x)
-    for _ in range(additional_for_layers):
+    x = inputs
+    for _ in range(additional_for_layers+2):
         x = layers.Dense(for_network_width)(x)
-        x = layers.LeakyReLU()(x)
         x = layers.BatchNormalization()(x)
-    x = layers.Dense(back_network_width)(x)
-    x = layers.LeakyReLU()(x)
-    x_batch_norm_1 = layers.BatchNormalization()(x)  # Save for skip
-    x = layers.Dense(back_network_width)(x_batch_norm_1)
-    x = layers.LeakyReLU()(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Dense(back_network_width)(x)
-    x = layers.LeakyReLU()(x)
-    x = layers.Add()([x, x_batch_norm_1])  # Skip connection
-    x = layers.BatchNormalization()(x)
-    x = layers.Dense(back_network_width)(x)
-    x = layers.LeakyReLU()(x)
-    for _ in range(additional_back_layers):
+        x = layers.LeakyReLU()(x)
+    x_batch_norm_1 = x  # Save for skip
+    for _ in range(2):
         x = layers.Dense(back_network_width)(x)
-        x = layers.LeakyReLU()(x)
         x = layers.BatchNormalization()(x)
+        x = layers.LeakyReLU()(x)
+    x = layers.Add()([x, x_batch_norm_1])  # Skip connection
+    for _ in range(additional_back_layers+1):
+        x = layers.Dense(back_network_width)(x)
+        x = layers.BatchNormalization()(x)
+        x = layers.LeakyReLU()(x)
+    # Dropout layer
+    x = layers.Dropout(dropout_fraction)(x)
     outputs = layers.Dense(1)(x)
 
     model = keras.Model(inputs=inputs, outputs=outputs,
-                        name="jeffrey_wandelt_23_network")
+                        name="default network")
     return model
 
 
@@ -229,7 +213,7 @@ def main():
     (epochs, training_size, initial_learning_rate, decay_steps, batch_size,
      for_network_width, back_network_width, additional_for_layers,
      additional_back_layers, whitening_transform, whitening_number,
-     alpha) = settings
+     alpha, drop_fraction) = settings
     config_dict['whitening_transform'] = whitening_transform
     config_dict['covariance_samples'] = whitening_number
 
@@ -255,7 +239,8 @@ def main():
         for_network_width,
         back_network_width,
         additional_for_layers,
-        additional_back_layers)
+        additional_back_layers,
+        drop_fraction)
     en.train(epochs=epochs,
              train_data_samples_per_model=training_size,
              validation_data_samples_per_model=int(training_size*0.4),
