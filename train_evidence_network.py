@@ -182,7 +182,7 @@ def default_nn_model(
     outputs = layers.Dense(1)(x)
 
     model = keras.Model(inputs=inputs, outputs=outputs,
-                        name="default network")
+                        name="default_network")
     return model
 
 
