@@ -68,7 +68,7 @@ priors:
     tau_e:
       type: uniform
       low: 0.005
-      high: 0.200
+      high: 0.05
     t_e:
       type: uniform
       low: 200.0   # K
