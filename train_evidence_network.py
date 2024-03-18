@@ -79,11 +79,12 @@ def main():
                          signal_simulator,
                          alpha=EN_ALPHA,
                          data_preprocessing=data_preprocessing)
-    en.train(epochs=50,
+    en.train(epochs=250,
              train_data_samples_per_model=2_000_000,
-             initial_learning_rate=2e-2,
+             validation_data_samples_per_model=400_000,
+             initial_learning_rate=1e-3,
              decay_steps=100_000,
-             batch_size=1024,
+             batch_size=4096,
              roll_back=True)
     end = time.time()
     add_timing_data(timing_file, 'network_training', end - start)

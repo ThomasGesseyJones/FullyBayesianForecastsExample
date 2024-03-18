@@ -123,26 +123,35 @@ class EvidenceNetwork:
         keras.Model
             The default neural network model
         """
+        # Network parameters
+        additional_for_layers = 0
+        for_network_width = 256
+        additional_back_layers = 2
+        back_network_width = 64
+
         inputs = layers.Input(shape=(input_size,))
-        x = layers.Dense(130)(inputs)
-        x = layers.LeakyReLU()(x)
+        x = inputs
+        for _ in range(additional_for_layers + 1):
+            x = layers.Dense(for_network_width)(x)
+            x = layers.BatchNormalization()(x)
+            x = layers.LeakyReLU()(x)
+        x = layers.Dense(back_network_width)(x)
         x = layers.BatchNormalization()(x)
-        x = layers.Dense(16)(x)
         x = layers.LeakyReLU()(x)
-        x_batch_norm_1 = layers.BatchNormalization()(x)  # Save for skip
-        x = layers.Dense(16)(x_batch_norm_1)
-        x = layers.LeakyReLU()(x)
-        x = layers.BatchNormalization()(x)
-        x = layers.Dense(16)(x)
-        x = layers.LeakyReLU()(x)
+        x_batch_norm_1 = x  # Save for skip
+        for _ in range(2):
+            x = layers.Dense(back_network_width)(x)
+            x = layers.BatchNormalization()(x)
+            x = layers.LeakyReLU()(x)
         x = layers.Add()([x, x_batch_norm_1])  # Skip connection
-        x = layers.BatchNormalization()(x)
-        x = layers.Dense(16)(x)
-        x = layers.LeakyReLU()(x)
+        for _ in range(additional_back_layers + 1):
+            x = layers.Dense(back_network_width)(x)
+            x = layers.BatchNormalization()(x)
+            x = layers.LeakyReLU()(x)
         outputs = layers.Dense(1)(x)
 
         model = keras.Model(inputs=inputs, outputs=outputs,
-                            name="jeffrey_wandelt_23_network")
+                            name="default_network")
         return model
 
     def get_simulated_data(self,
