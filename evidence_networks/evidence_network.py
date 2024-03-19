@@ -188,7 +188,8 @@ class EvidenceNetwork:
               initial_learning_rate: float = 1e-4,
               decay_steps: int = 1000,
               decay_rate: float = 0.95,
-              roll_back: bool = False) -> None:
+              roll_back: bool = False,
+              checkpoint_file: str = "best_weights.h5") -> None:
         """Train the Bayes ratio network.
 
         Parameters
@@ -214,6 +215,9 @@ class EvidenceNetwork:
         roll_back: bool, default=False
             Whether to roll back the network to validation loss minimum at
             the end of training
+        checkpoint_file: str, default="best_weights.h5"
+            The filename to save the best weights to during training. Has
+            no effect if roll_back is False.
         """
         # Set-up NN, default from arXiv:2305.11241 appendix if not given
         if nn_model is None:
@@ -253,7 +257,7 @@ class EvidenceNetwork:
         # Train model and set trained flag
         if roll_back:
             checkpoint = ModelCheckpoint(
-                "best_weights.h5",
+                checkpoint_file,
                 monitor="val_loss",
                 verbose=1,
                 save_best_only=True,
