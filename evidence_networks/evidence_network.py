@@ -11,6 +11,7 @@ import tensorflow as tf
 import keras
 from keras import layers
 from tensorflow.keras.optimizers.schedules import ExponentialDecay
+from tensorflow.keras.callbacks import ModelCheckpoint
 from keras import backend as k_backend
 import matplotlib.pyplot as plt
 
@@ -250,56 +251,28 @@ class EvidenceNetwork:
         self.validation_labels = validation_labels_data
 
         # Train model and set trained flag
-        if not roll_back:
-            self.nn_model.fit(
-                sample_data,
-                labels_data,
-                batch_size=batch_size,
-                epochs=epochs,
-                verbose=2,
-                validation_data=(
-                    validation_sample_data,
-                    validation_labels_data))
-            self.trained = True
-            return
+        if roll_back:
+            checkpoint = ModelCheckpoint(
+                "best_weights.h5",
+                monitor="val_loss",
+                verbose=1,
+                save_best_only=True,
+                mode="min")
+            callbacks = [checkpoint]
+        else:
+            callbacks = None
 
-        # Training with roll back, train for one epoch at a time and check
-        # validation loss after each epoch. If validation loss is lower than
-        # the previous minimum, save the weights. At the end of training, roll
-        # back to the weights with the lowest validation loss.
-        minimum_val_loss = np.inf
-        minimum_val_loss_weights = None
-        minimum_epoch_num = 0
-        for epoch_num in range(epochs):
-            # Train for one epoch
-            print(f"Training epoch {epoch_num + 1}/{epochs}.")
-            self.nn_model.fit(
-                sample_data,
-                labels_data,
-                batch_size=batch_size,
-                epochs=1,
-                verbose=2,
-                validation_data=(
-                    validation_sample_data,
-                    validation_labels_data))
-
-            # Check validation loss against previous minimum, and save weights
-            # if new minimum
-            val_loss = self.nn_model.evaluate(
+        self.nn_model.fit(
+            sample_data,
+            labels_data,
+            batch_size=batch_size,
+            epochs=epochs,
+            verbose=2,
+            validation_data=(
                 validation_sample_data,
-                validation_labels_data, verbose=0)[0]
-
-            if val_loss < minimum_val_loss:
-                minimum_val_loss = val_loss
-                minimum_val_loss_weights = self.nn_model.get_weights()
-                minimum_epoch_num = epoch_num + 1
-
-        # Roll back to weights with the lowest validation loss
-        print(f"Reverting to minimum validation loss model, which was after "
-              f"epoch {minimum_epoch_num}.")
-        self.nn_model.set_weights(minimum_val_loss_weights)
+                validation_labels_data),
+            callbacks=callbacks)
         self.trained = True
-        return
 
     def calculate_testing_loss(
             self,
