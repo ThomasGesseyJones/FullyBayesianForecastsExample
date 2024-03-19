@@ -7,6 +7,7 @@ a neural network trained to predict the Bayes ratio between two models.
 # Required imports
 from typing import Callable, Tuple, Optional
 import numpy as np
+import os
 import tensorflow as tf
 import keras
 from keras import layers
@@ -280,6 +281,7 @@ class EvidenceNetwork:
 
         if roll_back:
             self.nn_model.load_weights(checkpoint_file)
+            os.remove(checkpoint_file)
 
     def calculate_testing_loss(
             self,
