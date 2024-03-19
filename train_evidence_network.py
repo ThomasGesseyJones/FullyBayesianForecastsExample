@@ -97,25 +97,20 @@ def get_settings(run_id: int) -> Tuple:
     if run_id == 0:
         pass
     elif run_id == 1:
-        drop_fraction = 0.01
-    elif run_id == 2:
-        drop_fraction = 0.03
-    elif run_id == 3:
-        drop_fraction = 0.05
-    elif run_id == 4:
-        drop_fraction = 0.1
-    elif run_id == 5:
-        drop_fraction = 0.2
-    elif run_id == 6:
-        drop_fraction = 0.3
-    elif run_id == 7:
-        drop_fraction = 0.5
-    elif run_id == 8:
-        training_size = 1_000_000
-    elif run_id == 9:
         training_size = 4_000_000
-    elif run_id == 10:
+    elif run_id == 2:
         training_size = 8_000_000
+    elif run_id == 3:
+        training_size = 16_000_000
+    elif run_id == 4:
+        training_size = 4_000_000
+        batch_size = 8192
+    elif run_id == 5:
+        training_size = 8_000_000
+        batch_size = 16384
+    elif run_id == 6:
+        training_size = 16_000_000
+        batch_size = 32768
     else:
         raise ValueError(f"Run id {run_id} not recognised.")
 
