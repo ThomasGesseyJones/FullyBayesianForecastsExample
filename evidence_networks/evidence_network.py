@@ -278,6 +278,9 @@ class EvidenceNetwork:
             callbacks=callbacks)
         self.trained = True
 
+        if roll_back:
+            self.nn_model.load_weights(checkpoint_file)
+
     def calculate_testing_loss(
             self,
             num_test_samples: int = 200_000,
