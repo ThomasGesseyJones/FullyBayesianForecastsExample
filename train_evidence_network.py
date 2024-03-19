@@ -246,7 +246,9 @@ def main():
              decay_steps=decay_steps,
              batch_size=batch_size,
              roll_back=True,
-             nn_model=nn_model)
+             nn_model=nn_model,
+             checkpoint_file=os.path.join(
+                 model_dir, f'best_weights_{run_id}.h5'))
 
     # Save the network
     os.makedirs(model_dir, exist_ok=True)
