@@ -80,41 +80,30 @@ def get_settings(run_id: int) -> Tuple:
     """
     # Defaults
     epochs = 250
-    training_size = 16_000_000
+    training_size = 32_000_000
     initial_learning_rate = 1e-3
     decay_steps = 100_000
-    batch_size = 32768
+    batch_size = 65536
     for_network_width = 256
     back_network_width = 64
-    additional_for_layers = 0
+    additional_for_layers = 1
     additional_back_layers = 2
     whitening_transform = 'Cholesky'
     whitening_number = 100_000
     alpha = 2.0
-    drop_fraction = 0.0
+    drop_fraction = 0.1
 
     # This particular run
     if run_id == 0:
         pass
     elif run_id == 1:
-        training_size = 32_000_000
+        pass
     elif run_id == 2:
-        training_size = 32_000_000
-        batch_size = 65536
+        pass
     elif run_id == 3:
-        batch_size = 65536
+        pass
     elif run_id == 4:
-        epochs = 500
-    elif run_id == 5:
-        initial_learning_rate = 1e-2
-    elif run_id == 6:
-        drop_fraction = 0.1
-    elif run_id == 7:
-        decay_steps = 500_000
-    elif run_id == 8:
-        additional_for_layers = 1
-    elif run_id == 9:
-        additional_back_layers = 3
+        pass
     else:
         raise ValueError(f"Run id {run_id} not recognised.")
 
