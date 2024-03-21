@@ -83,27 +83,28 @@ def get_settings(run_id: int) -> Tuple:
     training_size = 32_000_000
     initial_learning_rate = 1e-3
     decay_steps = 100_000
-    batch_size = 65536
+    batch_size = 32_768
     for_network_width = 256
     back_network_width = 64
-    additional_for_layers = 1
+    additional_for_layers = 0
     additional_back_layers = 2
     whitening_transform = 'Cholesky'
     whitening_number = 100_000
     alpha = 2.0
-    drop_fraction = 0.1
+    drop_fraction = 0
 
     # This particular run
     if run_id == 0:
         pass
     elif run_id == 1:
-        pass
+        epochs = 300
     elif run_id == 2:
-        pass
+        batch_size = 65_536
     elif run_id == 3:
-        pass
+        training_size = 64_000_000
+        batch_size = 131_072
     elif run_id == 4:
-        pass
+        drop_fraction = 1
     else:
         raise ValueError(f"Run id {run_id} not recognised.")
 
@@ -165,9 +166,9 @@ def default_nn_model(
         x = layers.Dense(back_network_width)(x)
         x = layers.BatchNormalization()(x)
         x = layers.LeakyReLU()(x)
-    # Dropout layer
-    x = layers.Dropout(dropout_fraction)(x)
     outputs = layers.Dense(1)(x)
+    if dropout_fraction == 1:
+        outputs = layers.LeakyReLU()(outputs)
 
     model = keras.Model(inputs=inputs, outputs=outputs,
                         name="default_network")
