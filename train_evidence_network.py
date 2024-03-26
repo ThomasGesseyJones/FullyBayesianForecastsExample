@@ -79,12 +79,14 @@ def main():
                          signal_simulator,
                          alpha=EN_ALPHA,
                          data_preprocessing=data_preprocessing)
-    en.train(epochs=50,
-             train_data_samples_per_model=2_000_000,
-             initial_learning_rate=2e-2,
+    en.train(epochs=300,
+             train_data_samples_per_model=32_000_000,
+             validation_data_samples_per_model=12_800_000,
+             initial_learning_rate=1e-3,
              decay_steps=100_000,
-             batch_size=1024,
-             roll_back=True)
+             batch_size=32_768,
+             roll_back=True,
+             checkpoint_file=os.path.join(model_dir, 'best_weights.h5'))
     end = time.time()
     add_timing_data(timing_file, 'network_training', end - start)
 
@@ -99,7 +101,8 @@ def main():
     start = time.time()
     plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
     fig, ax = plt.subplots()
-    _ = en.blind_coverage_test(plotting_ax=ax, num_validation_samples=100_000)
+    _ = en.blind_coverage_test(plotting_ax=ax,
+                               num_validation_samples=12_800_000)
     figure_folder = os.path.join('figures_and_results', 'blind_coverage_tests')
     os.makedirs(figure_folder, exist_ok=True)
     fig.savefig(os.path.join(
@@ -176,6 +179,11 @@ def main():
         numeric_results_file.write(
             f"{percent_changed:.2f}% of signals changed detection status\n")
         numeric_results_file.write("\n")
+
+    # Network loss
+    test_loss = en.calculate_testing_loss(
+        12_800_000, 32_768)
+    numeric_results_file.write(f"Network testing loss: {test_loss:.4f}\n")
     numeric_results_file.close()
 
     # Plot results

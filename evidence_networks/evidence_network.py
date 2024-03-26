@@ -7,10 +7,12 @@ a neural network trained to predict the Bayes ratio between two models.
 # Required imports
 from typing import Callable, Tuple, Optional
 import numpy as np
+import os
 import tensorflow as tf
 import keras
 from keras import layers
 from tensorflow.keras.optimizers.schedules import ExponentialDecay
+from tensorflow.keras.callbacks import ModelCheckpoint
 from keras import backend as k_backend
 import matplotlib.pyplot as plt
 
@@ -109,9 +111,10 @@ class EvidenceNetwork:
 
     @staticmethod
     def default_nn_model(input_size: int) -> keras.Model:
-        """Return a default neural network model.
+        """Return a neural network model.
 
-        This is the model from the appendix of arXiv:2305.11241.
+        This is a modified version of the model from the appendix of
+        arXiv:2305.11241.
 
         Parameters
         ----------
@@ -123,26 +126,35 @@ class EvidenceNetwork:
         keras.Model
             The default neural network model
         """
+        # Settings
+        for_network_width = 256
+        back_network_width = 64
+        additional_for_layers = 0
+        additional_back_layers = 2
+
         inputs = layers.Input(shape=(input_size,))
-        x = layers.Dense(130)(inputs)
-        x = layers.LeakyReLU()(x)
+        x = inputs
+        for _ in range(additional_for_layers+1):
+            x = layers.Dense(for_network_width)(x)
+            x = layers.BatchNormalization()(x)
+            x = layers.LeakyReLU()(x)
+        x = layers.Dense(back_network_width)(x)
         x = layers.BatchNormalization()(x)
-        x = layers.Dense(16)(x)
         x = layers.LeakyReLU()(x)
-        x_batch_norm_1 = layers.BatchNormalization()(x)  # Save for skip
-        x = layers.Dense(16)(x_batch_norm_1)
-        x = layers.LeakyReLU()(x)
-        x = layers.BatchNormalization()(x)
-        x = layers.Dense(16)(x)
-        x = layers.LeakyReLU()(x)
+        x_batch_norm_1 = x  # Save for skip
+        for _ in range(2):
+            x = layers.Dense(back_network_width)(x)
+            x = layers.BatchNormalization()(x)
+            x = layers.LeakyReLU()(x)
         x = layers.Add()([x, x_batch_norm_1])  # Skip connection
-        x = layers.BatchNormalization()(x)
-        x = layers.Dense(16)(x)
-        x = layers.LeakyReLU()(x)
+        for _ in range(additional_back_layers+1):
+            x = layers.Dense(back_network_width)(x)
+            x = layers.BatchNormalization()(x)
+            x = layers.LeakyReLU()(x)
         outputs = layers.Dense(1)(x)
 
         model = keras.Model(inputs=inputs, outputs=outputs,
-                            name="jeffrey_wandelt_23_network")
+                            name="default_network")
         return model
 
     def get_simulated_data(self,
@@ -187,7 +199,8 @@ class EvidenceNetwork:
               initial_learning_rate: float = 1e-4,
               decay_steps: int = 1000,
               decay_rate: float = 0.95,
-              roll_back: bool = False) -> None:
+              roll_back: bool = False,
+              checkpoint_file: str = "best_weights.h5") -> None:
         """Train the Bayes ratio network.
 
         Parameters
@@ -213,6 +226,9 @@ class EvidenceNetwork:
         roll_back: bool, default=False
             Whether to roll back the network to validation loss minimum at
             the end of training
+        checkpoint_file: str, default="best_weights.h5"
+            The filename to save the best weights to during training. Has
+            no effect if roll_back is False.
         """
         # Set-up NN, default from arXiv:2305.11241 appendix if not given
         if nn_model is None:
@@ -250,56 +266,58 @@ class EvidenceNetwork:
         self.validation_labels = validation_labels_data
 
         # Train model and set trained flag
-        if not roll_back:
-            self.nn_model.fit(
-                sample_data,
-                labels_data,
-                batch_size=batch_size,
-                epochs=epochs,
-                verbose=2,
-                validation_data=(
-                    validation_sample_data,
-                    validation_labels_data))
-            self.trained = True
-            return
+        if roll_back:
+            checkpoint = ModelCheckpoint(
+                checkpoint_file,
+                monitor="val_loss",
+                verbose=1,
+                save_best_only=True,
+                mode="min")
+            callbacks = [checkpoint]
+        else:
+            callbacks = None
 
-        # Training with roll back, train for one epoch at a time and check
-        # validation loss after each epoch. If validation loss is lower than
-        # the previous minimum, save the weights. At the end of training, roll
-        # back to the weights with the lowest validation loss.
-        minimum_val_loss = np.inf
-        minimum_val_loss_weights = None
-        minimum_epoch_num = 0
-        for epoch_num in range(epochs):
-            # Train for one epoch
-            print(f"Training epoch {epoch_num + 1}/{epochs}.")
-            self.nn_model.fit(
-                sample_data,
-                labels_data,
-                batch_size=batch_size,
-                epochs=1,
-                verbose=2,
-                validation_data=(
-                    validation_sample_data,
-                    validation_labels_data))
-
-            # Check validation loss against previous minimum, and save weights
-            # if new minimum
-            val_loss = self.nn_model.evaluate(
+        self.nn_model.fit(
+            sample_data,
+            labels_data,
+            batch_size=batch_size,
+            epochs=epochs,
+            verbose=2,
+            validation_data=(
                 validation_sample_data,
-                validation_labels_data, verbose=0)[0]
-
-            if val_loss < minimum_val_loss:
-                minimum_val_loss = val_loss
-                minimum_val_loss_weights = self.nn_model.get_weights()
-                minimum_epoch_num = epoch_num + 1
-
-        # Roll back to weights with the lowest validation loss
-        print(f"Reverting to minimum validation loss model, which was after "
-              f"epoch {minimum_epoch_num}.")
-        self.nn_model.set_weights(minimum_val_loss_weights)
+                validation_labels_data),
+            callbacks=callbacks)
         self.trained = True
-        return
+
+        if roll_back:
+            self.nn_model.load_weights(checkpoint_file)
+            os.remove(checkpoint_file)
+
+    def calculate_testing_loss(
+            self,
+            num_test_samples: int = 200_000,
+            batch_size: int = 100
+    ):
+        """Calculate the testing loss for the network.
+
+        Parameters
+        ----------
+        num_test_samples: int, default=200_000
+            The number of test samples to use
+        batch_size: int, default=100
+            The batch size to use for testing
+
+        Returns
+        -------
+        testing_loss: float
+            The testing loss
+        """
+        # Create a preprocessed test data set
+        test_data, test_labels = self.get_simulated_data(num_test_samples)
+        test_data = self.data_preprocessing(test_data)
+        test_loss = self.nn_model.evaluate(
+            test_data, test_labels, batch_size=batch_size, verbose=0)[0]
+        return test_loss
 
     def evaluate_log_bayes_ratio(self, data: np.ndarray) -> np.ndarray:
         """Evaluate the log Bayes ratio between model 1 and 0.
