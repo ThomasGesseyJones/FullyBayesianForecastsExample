@@ -319,13 +319,18 @@ class EvidenceNetwork:
             test_data, test_labels, batch_size=batch_size, verbose=0)[0]
         return test_loss
 
-    def evaluate_log_bayes_ratio(self, data: np.ndarray) -> np.ndarray:
+    def evaluate_log_bayes_ratio(
+            self,
+            data: np.ndarray,
+            **kwargs) -> np.ndarray:
         """Evaluate the log Bayes ratio between model 1 and 0.
 
         Parameters
         ----------
         data: np.ndarray
             A dataset or batch of data sets to feed to the network.
+        **kwargs
+            Additional keyword arguments to pass to predict
 
         Returns
         -------
@@ -340,16 +345,23 @@ class EvidenceNetwork:
 
         prepped_data = self.data_preprocessing(data)
 
-        nn_output = self.nn_model(tf.constant(prepped_data), training=False)
+        kwargs["batch_size"] = kwargs.get("batch_size", 100_000)
+        kwargs["verbose"] = kwargs.get("verbose", 0)
+
+        nn_output = self.nn_model.predict(
+            tf.constant(prepped_data),
+            **kwargs)
         return leaky_parity_odd_transformation(nn_output, self.alpha)
 
-    def evaluate_bayes_ratio(self, data: np.ndarray) -> np.ndarray:
+    def evaluate_bayes_ratio(self, data: np.ndarray, **kwargs) -> np.ndarray:
         """Evaluate the Bayes ratio between model 1 and 0.
 
         Parameters
         ----------
         data: np.ndarray
             A dataset or batch of data sets to feed to the network.
+        **kwargs
+            Additional keyword arguments to pass to predict
 
         Returns
         -------
@@ -359,7 +371,7 @@ class EvidenceNetwork:
         if not self.trained:
             raise ValueError("Network has not been trained yet.")
 
-        return np.exp(self.evaluate_log_bayes_ratio(data))
+        return np.exp(self.evaluate_log_bayes_ratio(data, **kwargs))
 
     def save(self, filename: str):
         """Save the network to file.
