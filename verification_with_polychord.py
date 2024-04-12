@@ -5,11 +5,12 @@ ratio between the no signal model and the with signal model using
 Polychord. These results are then stored in the verification_data directory
 for later comparison with the results from the evidence network.
 
-This script should be run before train_evidence_network.py, and only needs to
-be run once for each noise sigma (it is not necessary to rerun this script
-if changes are made to the evidence network). The script can be run in
-parallel using MPI (which is recommended for speed). It is recommended to run
-this script on a CPU since PolyChord does not derive any benefit from GPUs.
+This script should be run before train_evidence_network.py (it is not necessary
+to rerun this script if changes are made to the evidence network only changes
+to priors, models, or noise sigma). The script can be run in
+parallel using MPI and in batches (which are recommended for speed). It is
+recommended to run this script on CPUs since PolyChord does not derive any
+benefit from GPUs.
 
 The script takes two command line arguments:
 - `--batch_num`: An integer that specifies the batch of verification runs

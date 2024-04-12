@@ -6,7 +6,6 @@ uses needs to be trained and saved first using
 `train_evidence_network.py` or this script with raise an error.
 
 If using this script it is recommended to run on a GPU for speed.
-Plus some CPUs will not have enough memory for the mock data.
 
 The script can take an optional command line argument to specify the
 noise sigma in K. The default is 0.015 K.

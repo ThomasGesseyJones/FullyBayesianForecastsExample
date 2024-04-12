@@ -207,7 +207,7 @@ class EvidenceNetwork:
         ----------
         nn_model: keras.Model
             The neural network model to train. If None, a default model
-            from arXiv:2305.11241 appendix is used.
+            is used.
         train_data_samples_per_model: int, default=1_000_000
             The number of data samples to simulate from each model for training
         validation_data_samples_per_model: int, default=200_000
