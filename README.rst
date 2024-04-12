@@ -31,7 +31,7 @@ reproducible analysis pipeline for the letter.
 
 The overall goal of the code is to produce a fully Bayesian forecast of
 the chance of a `REACH <https://ui.adsabs.harvard.edu/abs/2022NatAs...6..984D/abstract>`__-like experiment
-making a significant detection of the 21-cm global signal, given a noise level. It also produces
+making a significant detection of the 21-cm global signal from within foregrounds and noise. It also produces
 figures showing how this conclusion changes with different astrophysical parameter values
 and validates the forecast through blind coverage
 tests and comparison to `PolyChord <https://ui.adsabs.harvard.edu/abs/2015MNRAS.453.4384H/abstract>`__.
@@ -74,17 +74,19 @@ There are three modules included in the repository:
   that take a number of data simulations to run and return that number of mock data
   simulations alongside the values of any parameters that were used in the
   simulations. Submodules of this module define functions to generate specific
-  simulators for models with noise only and models with a noisy 21-cm global signal.
+  simulators for noise, foregrounds, and the 21-cm signal.
 
 These three modules are used in the three analysis scripts:
 
 - verification_with_polychord.py: This script generates a range of mock data
-  sets from both the noise-only model and the noisy-signal model, and then
+  sets from both the no-signal model and the with-signal model, and then
   performs a Bayesian analysis on each of them.
   Evaluating the Bayes ratio between the two models of the data
   using Polychord. These results are then stored in the verification_data directory
   for later comparison with the results from the evidence network to
-  verify its accuracy. It should be run first, ideally in parallel.
+  verify its accuracy. It should be run first, ideally with a large number of
+  versions in parallel as it is very computationally expensive but
+  splits simply into one task per data set.
 - train_evidence_network.py: This script builds the evidence network object and
   the data simulator functions, then trains the evidence network. Once trained
   it stores the evidence network in the models directory, then runs a blind
@@ -106,11 +108,11 @@ scripts can be run from the terminal using the following commands:
 
 .. code:: bash
 
-    python verification_with_polychord.py
+    python verification_with_polychord.py 0
     python train_evidence_network.py
     python visualize_forecasts.py
 
-to run with the default noise level of 79 mK and replicate the
+to run with the default noise level of 15 mK and replicate the
 analysis from `Gessey-Jones et al. (2023) <https://ui.adsabs.harvard.edu/abs/2023arXiv230906942G>`__.
 Alternatively you can pass
 the scripts a command line argument to specify the experiments noise level in K. For example
@@ -118,28 +120,29 @@ to run with a noise level of 100 mK you would run the following commands:
 
 .. code:: bash
 
-    python verification_with_polychord.py 0.1
+    python verification_with_polychord.py 0 0.1
     python train_evidence_network.py 0.1
     python visualize_forecasts.py 0.1
 
 Two other files of interest are:
 
 - fbf_utilities.py: which defines IO functions
-  needed by the three scripts and a utility function to assemble the data
-  simulators for the noise-only and noisy-signal model.
+  needed by the three scripts, utility functions to assemble the data
+  simulators for the noise-only and noisy-signal model, and standard
+  whitening transforms.
 - configuration.yaml: which defines several parameters used in the code
   including the experimental frequency resolution, the priors on the
-  astrophysical parameters of the global 21-cm signal model, and parameters
-  that control which astrophysical parameters are plotted in the forecast
-  figures. If you change the priors or resolution the entire pipeline
-  needs to be rerun to get accurate results.
+  astrophysical and foreground parameters, and the astrophysical parameters
+  which are plotted in the forecast figures. If you change the priors or
+  resolution the entire pipeline needs to be rerun to get accurate results.
 
 The various figures produced in the analysis are stored in the
 figures_and_results directory alongside the timing_data to assess the
 performance of the methodology and some summary statistics of the evidence
 networks performance. The figures and data generated in the
 analysis for `Gessey-Jones et al. (2023) <https://ui.adsabs.harvard.edu/abs/2023arXiv230906942G>`__ are provided in this
-repository for reference.
+repository for reference, alongside the figures generated for an earlier
+version of the letter which did not model foregrounds.
 
 Licence and Citation
 --------------------
@@ -194,6 +197,8 @@ To run the code you will need to following additional packages:
 - `pypolychord <https://github.com/PolyChord/PolyChordLite>`__
 - `scipy <https://pypi.org/project/scipy/>`__
 - `mpi4py <https://pypi.org/project/mpi4py/>`__
+- `scikit-learn <https://pypi.org/project/scikit-learn/>`__
+- `anesthetic <https://pypi.org/project/anesthetic/>`__
 
 The code was developed using python 3.8. It has not been tested on other versions
 of python. Exact versions of the packages used in our analysis
