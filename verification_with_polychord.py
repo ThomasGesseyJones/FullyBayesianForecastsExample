@@ -17,7 +17,7 @@ The script takes two command line arguments:
     to perform. As many HPCs have a limit on the job length, the script
     allows the verification runs to be split into batches. The number of
     mock data sets analyzed in each batch is set in the configuration file.
-    Batches should run sequentially, starting from 0.
+    Batches should be numbered sequentially, starting from 0.
 - `--noise_sigma` (optional): A float value that allows you to specify the
    noise sigma in K. The default is 0.015 K. This should be the same as the
     noise sigma used later in train_evidence_network.py.
