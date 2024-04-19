@@ -97,6 +97,62 @@ def global_signal_experiment_measurement_redshifts(
     return redshifts
 
 
+# Foreground model
+def foreground_model(
+        frequencies_mhz: np.ndarray,
+        coefficients: np.ndarray
+) -> np.ndarray:
+    r"""Foreground model for the sky-averaged radio temperature.
+
+    Implements the physical model for the sky-averaged radio temperature
+    foreground from Hills et al. (2018),
+    T = d_{0} (nu / nu_{c})^{-2.5 + d_{1} + d_{2}
+        log(nu / nu_{c})} e^{-tau_{e} (nu / nu_{c})^{-2}} +
+        T_{e} (1 - e^{-\tau_{e} (\nu / \nu_{c})^{-2}})
+    where \nu_{\rm c} is the normalization frequency 75 MHz.
+
+    Parameters
+    ----------
+    frequencies_mhz : np.ndarray
+        The frequencies at which to calculate the foreground model in MHz.
+    coefficients : np.ndarray
+        The coefficients for the foreground model (d_0, d_1, d_2, \tau_{e},
+        T_{e}).
+
+    Returns
+    -------
+    for_temp : np.ndarray
+        The foreground model for the sky-averaged radio temperature in K.
+        Frequency is in the same order as the input frequencies, and is indexed
+        along the second axis of the output array.
+    """
+    # Unpack and Scale the frequencies
+    d0 = np.squeeze(coefficients[..., 0])
+    d1 = np.squeeze(coefficients[..., 1])
+    d2 = np.squeeze(coefficients[..., 2])
+    tau_e = np.squeeze(coefficients[..., 3])
+    t_e = np.squeeze(coefficients[..., 4])
+    nu_norm = frequencies_mhz / 75.0
+
+    # Reshape arrays for outer product
+    d0 = d0[..., np.newaxis]
+    d1 = d1[..., np.newaxis]
+    d2 = d2[..., np.newaxis]
+    tau_e = tau_e[..., np.newaxis]
+    t_e = t_e[..., np.newaxis]
+    nu_norm = nu_norm[np.newaxis, ...]
+
+    # Find the principal exponent
+    exponent = -2.5 + d1 + d2 * np.log(nu_norm)
+    galactic_term = d0 * nu_norm**exponent
+
+    # Ionosphere effects
+    absorption = np.exp(-tau_e * nu_norm**-2)
+    emission = t_e * (1 - np.exp(-tau_e * nu_norm**-2))
+
+    return np.squeeze(galactic_term * absorption + emission)
+
+
 # Simulators
 def generate_global_signal_simulator(
         global_emu_predictor: evaluate,
@@ -178,3 +234,62 @@ def generate_global_signal_simulator(
 
         return signals, params
     return signal_simulator
+
+
+def generate_foreground_simulator(
+        redshifts: np.ndarray,
+        *coefficient_samplers: Callable
+) -> Simulator:
+    """Return a simulator function for the foreground model.
+
+    Parameters
+    ----------
+    redshifts : np.ndarray
+        The redshifts at which the foreground model will be evaluated.
+    coefficient_samplers : Iterable[Callable]
+        Functions, that return samples of the coefficients for the foreground
+        model. The order of the foreground model is set implicitly by the size
+        of this iterable.
+
+    Returns
+    -------
+    foreground_simulator : Callable
+        Function that takes a number of data simulations and returns
+        that number of foreground models (in K) as an array
+        plus the corresponding parameters as a dataframe.
+    """
+    # Convert redshifts to frequencies in MHz
+    frequencies_mhz = FREQ_21CM_MHZ / (1 + redshifts)
+
+    # Set-up prior sampler
+    prior_sampler = generate_composite_prior_sampler(*coefficient_samplers)
+
+    # Define the simulator function
+    def foreground_simulator(num_sims: int) -> Tuple[np.ndarray, DataFrame]:
+        """Simulate the foreground model.
+
+        Parameters
+        ----------
+        num_sims : int
+            The number of simulations to run
+
+        Returns
+        -------
+        foregrounds : np.ndarray
+            The simulated foreground models (in K) as an array
+        parameters : DataFrame
+            The corresponding foreground coefficients as a dataframe.
+        """
+        # Sample the coefficients
+        coefficients = prior_sampler(num_sims)
+
+        # Run the foreground model
+        foregrounds = foreground_model(frequencies_mhz, coefficients)
+
+        # Convert coefficients to DataFrame
+        params = DataFrame(coefficients,
+                           columns=['d0', 'd1', 'd2', 'tau_e', 't_e'])
+
+        return foregrounds, params
+
+    return foreground_simulator

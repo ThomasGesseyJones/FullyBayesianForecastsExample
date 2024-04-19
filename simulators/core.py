@@ -15,31 +15,37 @@ Simulator = Callable[[int], Tuple[np.ndarray, DataFrame]]
 
 # Combine simulators
 def additive_simulator_combiner(
-        simulator_1: Simulator,
-        simulator_2: Simulator
+        *simulators: Simulator
 ):
-    """Combine two simulators by adding their data outputs.
+    """Combine simulators by adding their data outputs.
+
+    Simulator parameters must have different names.
 
     Parameters
     ----------
-    simulator_1 : Simulator
-        The first simulator to combine.
-    simulator_2 : Simulator
-        The second simulator to combine.
+    simulators : Iterable of Simulator
+        The simulators to combine
 
     Returns
     -------
     combined_simulator : Simulator
         The combined simulator.
     """
+    # Catch edge-cases
+    if len(simulators) == 0:
+        raise ValueError('No simulators given.')
+    elif len(simulators) == 1:
+        return simulators[0]
+
     def _combined_simulator(num_data_simulations: int
                             ) -> Tuple[np.ndarray, DataFrame]:
-        """Combine two simulators by adding their data outputs."""
-        data_1, params_1 = simulator_1(num_data_simulations)
-        data_2, params_2 = simulator_2(num_data_simulations)
-
-        # Combine parameters
-        params = params_1.join(params_2, how='outer',
-                               lsuffix='_1', rsuffix='_2')
-        return data_1 + data_2, params
+        """Combine simulators by adding their data outputs."""
+        data_plus_params = [simulator(num_data_simulations) for simulator in
+                            simulators]
+        combined_data = data_plus_params[0][0]
+        combined_params = data_plus_params[0][1]
+        for data, params in data_plus_params[1:]:
+            combined_params = combined_params.join(params, how='outer')
+            combined_data += data
+        return combined_data, combined_params
     return _combined_simulator

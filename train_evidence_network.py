@@ -2,7 +2,7 @@
 
 Script to train the Evidence Networks for the paper. The created
 Evidence Network is trained to predict the Bayes ratio between a model
-with a noisy 21-cm signal and a model with only noise. The network is
+with a 21-cm signal and a model with only noise + foreground. The network is
 saved to the `models` directory after training is complete. After training
 the network is tested using the blind coverage test and the results are
 saved to the `figures_and_results` directory. The network is also evaluated
@@ -11,17 +11,17 @@ available, and the comparison is plot and saved to the
 `figures_and_results` directory.
 
 If using this script it is recommended to train on a GPU for speed.
-Plus some CPUs will not have enough memory to train the network.
 
 The script can take an optional command line argument to specify the
-noise sigma in K. The default is 0.079 K.
+noise sigma in K. The default is 0.015 K.
 """
 
 # Required imports
 import numpy as np
 from evidence_networks import EvidenceNetwork
-from fbf_utilities import load_configuration_dict, get_noise_sigma, \
-    assemble_simulators, timing_filename, add_timing_data
+from fbf_utilities import load_configuration_dict, \
+    assemble_simulators, timing_filename, add_timing_data, \
+    generate_preprocessing_function, get_noise_sigma
 import os
 import matplotlib.pyplot as plt
 import time
@@ -53,56 +53,71 @@ def sigma_to_log_k(sigma: float) -> float:
 def main():
     """Train the Evidence Network."""
     # IO
-    sigma_noise = get_noise_sigma()
     config_dict = load_configuration_dict()
-    timing_file = timing_filename(sigma_noise)
+    noise_sigma = get_noise_sigma()
+    timing_file = timing_filename(noise_sigma)
 
     # Set-up simulators
     start = time.time()
-    noise_only_simulator, noisy_signal_simulator = assemble_simulators(
-        config_dict, sigma_noise)
+    no_signal_simulator, signal_simulator = assemble_simulators(
+        config_dict, noise_sigma)
     end = time.time()
     add_timing_data(timing_file, 'simulator_assembly', end - start)
 
+    # Generate our preprocessing function
+    model_dir = os.path.join("models", f'en_noise_{noise_sigma}')
+    data_preprocessing = generate_preprocessing_function(
+        config_dict,
+        noise_sigma,
+        model_dir,
+        overwrite=True)
+
     # Create and train evidence network
     start = time.time()
-    en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator,
-                         alpha=EN_ALPHA)
-    en.train(epochs=20,
-             train_data_samples_per_model=2_000_000,
-             initial_learning_rate=2e-4,
+    en = EvidenceNetwork(no_signal_simulator,
+                         signal_simulator,
+                         alpha=EN_ALPHA,
+                         data_preprocessing=data_preprocessing)
+    en.train(epochs=900,
+             train_data_samples_per_model=32_000_000,
+             validation_data_samples_per_model=12_800_000,
+             initial_learning_rate=1e-3,
              decay_steps=100_000,
-             batch_size=1000,
-             roll_back=True)
+             batch_size=32_768,
+             roll_back=True,
+             checkpoint_file=os.path.join(model_dir, 'best_weights.h5'))
     end = time.time()
     add_timing_data(timing_file, 'network_training', end - start)
 
     # Save the network
-    network_folder = os.path.join("models", f'en_noise_{sigma_noise:.4f}')
-    os.makedirs(network_folder, exist_ok=True)
-    network_file = os.path.join(network_folder, "global_signal_en.h5")
+    os.makedirs(model_dir, exist_ok=True)
+    network_file = os.path.join(
+        model_dir,
+        f"global_signal_en_noise_{noise_sigma}.h5")
     en.save(network_file)
 
     # Perform blind coverage test
     start = time.time()
     plt.style.use(os.path.join('figures_and_results', 'mnras_single.mplstyle'))
     fig, ax = plt.subplots()
-    _ = en.blind_coverage_test(plotting_ax=ax, num_validation_samples=100_000)
+    _ = en.blind_coverage_test(plotting_ax=ax,
+                               num_validation_samples=1_000_000)
     figure_folder = os.path.join('figures_and_results', 'blind_coverage_tests')
     os.makedirs(figure_folder, exist_ok=True)
-    fig.savefig(os.path.join(figure_folder,
-                             f'en_noise_{sigma_noise:.4f}_blind_coverage.pdf'))
+    fig.savefig(os.path.join(
+        figure_folder,
+        f'en_blind_coverage_noise_{noise_sigma}.pdf'))
     end = time.time()
     add_timing_data(timing_file, 'bct', end - start)
 
     # Load verification data
     verification_data_file = os.path.join(
-        'verification_data', f'noise_{sigma_noise:.4f}_verification_data.npz')
+        'verification_data',
+        f'verification_data_noise_{noise_sigma}.npz')
     verification_file_contents = np.load(verification_data_file)
     pc_log_bayes_ratios = verification_file_contents['log_bayes_ratios']
     v_data = verification_file_contents['data']
     v_labels = verification_file_contents['labels']
-    pc_nlike = verification_file_contents['nlike']
 
     # Evaluate network on verification data
     start = time.time()
@@ -113,7 +128,8 @@ def main():
 
     # In case useful save the log bayes ratios computed by the network
     en_bayes_ratio_file = os.path.join(
-        'verification_data', f'noise_{sigma_noise:.4f}_en_log_k.npz')
+        'verification_data',
+        f'en_log_k_noise_{noise_sigma}.npz')
     np.savez(en_bayes_ratio_file, log_bayes_ratios=en_log_bayes_ratios)
 
     # Create output directory for results of verification comparison
@@ -122,8 +138,7 @@ def main():
     numeric_results_filename = os.path.join(
         "figures_and_results",
         "polychord_verification",
-        f"polychord_verification_"
-        f"en_noise_{sigma_noise:.4f}_K_results.txt")
+        f"polychord_verification_results_noise_{noise_sigma}.txt")
     numeric_results_file = open(numeric_results_filename, 'w')
 
     # Print results
@@ -153,10 +168,10 @@ def main():
         numeric_results_file.write(
             f"{detection_sigma} sigma detection statistics:\n")
         numeric_results_file.write(
-            f"{en_percent_detected:.2f}% of signals were detectable "
+            f"{pc_percent_detected:.2f}% of signals were detectable "
             f"according to Polychord\n")
         numeric_results_file.write(
-            f"{pc_percent_detected:.2f}% of signals were detectable "
+            f"{en_percent_detected:.2f}% of signals were detectable "
             f"according to the network\n")
         numeric_results_file.write(
             f"{percent_difference:.2f}% difference in detection rate\n")
@@ -164,12 +179,10 @@ def main():
             f"{percent_changed:.2f}% of signals changed detection status\n")
         numeric_results_file.write("\n")
 
-    # And mean and total number of live point
-    pc_nlike = np.array(pc_nlike)
-    numeric_results_file.write(f"Mean number of likelihood evaluations: "
-                               f"{np.mean(pc_nlike):.4f}\n")
-    numeric_results_file.write(f"Total number of likelihood evaluations: "
-                               f"{np.sum(pc_nlike):.4f}\n")
+    # Network loss
+    test_loss = en.calculate_testing_loss(
+        12_800_000, 32_768)
+    numeric_results_file.write(f"Network testing loss: {test_loss:.4f}\n")
     numeric_results_file.close()
 
     # Plot results
@@ -181,7 +194,7 @@ def main():
                s=2, marker='x', zorder=1, alpha=0.8)
     ax.scatter(en_log_bayes_ratios[v_labels == 1],
                pc_log_bayes_ratios[v_labels == 1],
-               c='C1', label='Noisy Signal',
+               c='C1', label='With Signal',
                s=2, marker='x', zorder=1, alpha=0.8)
     min_log_z = np.min([np.min(en_log_bayes_ratios),
                         np.min(pc_log_bayes_ratios)])
@@ -212,8 +225,7 @@ def main():
     filename = os.path.join(
         "figures_and_results",
         "polychord_verification",
-        f"polychord_verification_"
-        f"en_noise_{sigma_noise:.4f}_K.pdf")
+        f"polychord_verification_noise_{noise_sigma}.pdf")
     fig.savefig(filename)
     plt.close(fig)
 

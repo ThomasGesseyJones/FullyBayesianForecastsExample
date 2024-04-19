@@ -6,11 +6,9 @@ uses needs to be trained and saved first using
 `train_evidence_network.py` or this script with raise an error.
 
 If using this script it is recommended to run on a GPU for speed.
-Plus some CPUs will not have enough memory for the mock data.
 
 The script can take an optional command line argument to specify the
-noise sigma in K. The default is 0.079 K. Each different noise level
-will require a different network to be trained.
+noise sigma in K. The default is 0.015 K.
 """
 
 # Required imports
@@ -18,7 +16,8 @@ from __future__ import annotations
 from typing import Collection
 from evidence_networks import EvidenceNetwork
 from fbf_utilities import get_noise_sigma, load_configuration_dict, \
-    assemble_simulators, timing_filename, add_timing_data
+    assemble_simulators, timing_filename, add_timing_data, \
+    generate_preprocessing_function
 from train_evidence_network import EN_ALPHA
 from matplotlib.ticker import MaxNLocator
 import os
@@ -462,14 +461,24 @@ def main():
 
     # Set up simulators
     start = time.time()
-    noise_only_simulator, noisy_signal_simulator = assemble_simulators(
+    no_signal_simulator, with_signal_simulator = assemble_simulators(
         config_dict, sigma_noise)
 
+    # Generate our preprocessing function
+    model_dir = os.path.join("models", f'en_noise_{sigma_noise}')
+    data_preprocessing = generate_preprocessing_function(
+        config_dict,
+        sigma_noise,
+        model_dir)
+
     # Load evidence network
-    en = EvidenceNetwork(noise_only_simulator, noisy_signal_simulator,
-                         alpha=EN_ALPHA)
-    network_folder = os.path.join("models", f'en_noise_{sigma_noise:.4f}')
-    network_file = os.path.join(network_folder, "global_signal_en.h5")
+    en = EvidenceNetwork(no_signal_simulator,
+                         with_signal_simulator,
+                         alpha=EN_ALPHA,
+                         data_preprocessing=data_preprocessing)
+    network_file = os.path.join(
+        model_dir,
+        f'global_signal_en_noise_{sigma_noise}.h5')
     en.load(network_file)
     end = time.time()
     add_timing_data(timing_file, 'en_loading', end - start)
@@ -478,7 +487,7 @@ def main():
     start = time.time()
     num_data_sets = config_dict["br_evaluations_for_forecast"]
     mock_data_w_signal, signal_params = \
-        noisy_signal_simulator(num_data_sets)
+        with_signal_simulator(num_data_sets)
     log_bayes_ratios = en.evaluate_log_bayes_ratio(mock_data_w_signal)
     end = time.time()
     add_timing_data(timing_file, 'en_fbf_log_k_evaluations',

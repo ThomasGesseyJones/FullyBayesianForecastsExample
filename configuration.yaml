@@ -21,49 +21,81 @@ frequency_resolution: 1.0
 # parameters of the prior. low and high are used in place of min and
 # max to avoid clashing with python keywords.
 priors:
-  f_star:
-    type: log_uniform
-    low: emu_min   # If given emu_min or emu_max, the value is taken from the
-    high: emu_max  # minimum or maximum value of GlobalEmu was trained on.
-  v_c:
-    type: log_uniform
-    low: emu_min
-    high: 30.0
-  f_x:
-    type: log_uniform
-    low: 0.001
-    high: emu_max
-  tau:
-    type: truncated_gaussian
-    mean: 0.054
-    std: 0.007
-    low: emu_min
-    high: emu_max
-  alpha:
-    type: uniform
-    low: emu_min
-    high: emu_max
-  nu_min:
-    type: log_uniform
-    low: emu_min
-    high: emu_max
-  R_mfp:
-    type: uniform
-    low: emu_min
-    high: emu_max
+  global_signal:
+    f_star:
+      type: log_uniform
+      low: emu_min   # If given emu_min or emu_max, the value is taken from the
+      high: emu_max  # minimum or maximum value of GlobalEmu was trained on.
+    v_c:
+      type: log_uniform
+      low: emu_min
+      high: 30.0
+    f_x:
+      type: log_uniform
+      low: 0.001
+      high: emu_max
+    tau:
+      type: truncated_gaussian
+      mean: 0.054
+      std: 0.007
+      low: emu_min
+      high: emu_max
+    alpha:
+      type: uniform
+      low: emu_min
+      high: emu_max
+    nu_min:
+      type: log_uniform
+      low: emu_min
+      high: emu_max
+    R_mfp:
+      type: uniform
+      low: emu_min
+      high: emu_max
+  foregrounds:
+    d0:
+      type: uniform
+      low: 1500.0  # K
+      high: 2000.0 # K
+    d1:
+      type: uniform
+      low: -1.0
+      high: 1.0
+    d2:
+      type: uniform
+      low: -0.05
+      high: 0.05
+    tau_e:
+      type: uniform
+      low: 0.005
+      high: 0.200
+    t_e:
+      type: uniform
+      low: 200.0   # K
+      high: 2000.0 # K
+#
+#
+# PREPROCESSING
+# =============
+# Settings to control the preprocessing of the data before being fed into the
+# neural network.
+whitening_transform: 'Cholesky'  # None, ZCA, PCA, Cholesky, ZCA-cor or PCA-cor
+covariance_samples: 100_000  # Number of samples to use when calculating the
+                             # covariance matrix for the whitening transform.
 #
 #
 # VERIFICATION
 # ============
-# Number of data sets generate from each model to use when verifying the
-# network against PolyChord. Each method is used to evaluate log K and then
-# the results are compared.
+# Number of data sets generated from each model to use when verifying the
+# network against PolyChord. Evaluated in batches of fixed size due to
+# HPC scheduling limitations.
 verification_data_sets_per_model: 1000
+verification_data_set_batch_size:    5
 #
 #
 # PLOTTING
 # ========
-# Parameters that control details of the plots used to visualise the results.
+# Parameters that control details of the plots used to visualize the results.
 br_evaluations_for_forecast: 1000000
 detection_thresholds: ["2 sigma", "3 sigma", "5 sigma"]
 parameters_to_plot: ["f_star", "f_x", "tau"]
