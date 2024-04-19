@@ -78,7 +78,7 @@ def main():
                          signal_simulator,
                          alpha=EN_ALPHA,
                          data_preprocessing=data_preprocessing)
-    en.train(epochs=300,
+    en.train(epochs=900,
              train_data_samples_per_model=32_000_000,
              validation_data_samples_per_model=12_800_000,
              initial_learning_rate=1e-3,
