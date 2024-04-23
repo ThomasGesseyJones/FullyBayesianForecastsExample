@@ -18,7 +18,13 @@
 %  3)  latex apssamp.tex
 %  4)  latex apssamp.tex
 %
-\documentclass[twocolumn,english,aps,prl,amsmath,amssymb,reprint,footinbib,floatfix,showkeys]{revtex4-2}
+
+% Journal Information - PRD
+% Letter format length limit 4,500 words
+% Estimate via https://journals.aps.org/authors/length-guide
+% Abstract length limit About 5% of article length & < 500 words, former gives < 200 words
+
+\documentclass[twocolumn,english,aps,prd,amsmath,amssymb,reprint,floatfix,nofootinbib,showkeys]{revtex4-2}
 
 
 %%% Default Packages
@@ -66,6 +72,10 @@
 \newcommand{\enf}{f_{\rm EN}(D)}
 \newcommand{\loss}{\mathcal{V}(\enf, m)}
 
+\newif\ifhighlightchanges
+\highlightchangesfalse
+\newcommand{\change}[1]{{\ifhighlightchanges\color{red} #1\else #1\fi}}
+
 
 
 \begin{document}
@@ -94,31 +104,44 @@
 
 
 \begin{abstract}
-Sensitivity forecasts inform the design of experiments and the direction of theoretical efforts. We argue that to arrive at representative results Bayesian forecasts should marginalize their conclusions over uncertain parameters and noise realizations rather than picking fiducial values. However, this is computationally infeasible with current methods. We thus propose a novel simulation-based forecasting methodology, which we find to be capable of providing expedient rigorous forecasts without relying on restrictive assumptions.
+Sensitivity forecasts inform the design of experiments and the direction of theoretical efforts. 
+\change{To} arrive at representative results\change{,} Bayesian forecasts should marginalize their conclusions over uncertain parameters and noise realizations rather than picking fiducial values. 
+However, this is \change{typically} computationally infeasible with current methods \change{for forecasts of an experiment's ability to distinguish between competing models}. 
+We thus propose a novel simulation-based methodology \change{capable} of providing expedient \change{and} rigorous \change{Bayesian model comparison} forecasts without relying on restrictive assumptions.
 \end{abstract}
 
 \keywords{Bayesian methods, Deep learning, Cosmology}
 \maketitle
 
 \textit{Introduction.}---
+\change{
+\citet{EN} recently proposed Evidence Networks.
+These are classifier artificial neural networks trained on data generated from two competing models using specific loss functions, so that the output of the network coverges to an invertible function of the Bayes ratio~\citep{Mackay_2003} between the two models. 
+Consequently, these networks can be used for simulation-based Bayesian model comparison as illustrated in various examples by those authors. 
+Here, we highlight a promising use case of these networks not mentioned in that original paper, forecasts of Bayesian model comparison analyses from upcoming experiments.  
+}
+
 Forecasts are an essential part of science.
 Estimates of required sensitivities guide the design of experiments, and whether these experiments can probe different theoretical models informs which models time and resources are spent developing. 
 Furthermore, funding agencies use anticipated scientific conclusions as part of their decision-making. 
 As a result, fast, accurate, and reliable forecasting techniques play a vital role in the modern scientific method.
 
 
-Due to its importance, many techniques exist to perform forecasts~\citep[e.g.][]{Fisher_1922, Trotta_2007b, Sellentin_2014, Ryan_2023}. 
+Due to its importance, many techniques exist to perform forecasts~\citep[e.g.][]{Fisher_1922, Trotta_2007b, Sellentin_2014, Alvey_2022a, Alvey_2022b, Ryan_2023}. 
 Within a Bayesian paradigm, arguably the most accurate forecasting technique is to generate mock data and perform Bayesian analysis on the data as if it were experimental data~\citep[e.g.][]{Anstey_2021, Rieck_2023}.
-However, such an analysis is typically computationally costly, limiting its application to a few mock data realizations, which may lead to erroneous conclusions if the mock data is not representative of reality.
-Hence, Fisher forecasts~\citep{Fisher_1922} are commonly employed across astronomy and astrophysics~\citep{Tegmark_1997, DETF, Trotta_2007b, 2007_Seo, Vallisneri_2008, More_2013, DiDio_2014, Zhai_2017, Bonvin_2018, Simons, Euclid_2020, dAssignies_2023, Mason_2023} to cover the potential data space and investigate how conclusions vary.
-Unfortunately, the Gaussianity assumption Fisher forecasts rely upon does not always hold, limiting their reliability~\citep[e.g.][]{Perotto_2006, Wolz_2012}.
-Furthermore, Fisher forecasts can only be used for model comparison forecasts on nested models (when one of the models is a special case of the other), limiting their applicability~\citep{Trotta_2007}. 
+However, such an analysis is typically computationally costly, limiting its application to a few mock data realizations.
+\change{Hence, these analyses often break a central tenant of Bayesian statistics by drawing conclusions based on a small number of fiducial parameter values, which may lead to erroneous conclusions if the mock data used is not representative of reality.}
+
+\change{To avoid this issue, the conclusions of Bayesian forecasts should be marginalized over uncertain parameters and noise realizations to perform a fully Bayesian forecast~\citep{Mukherjee_2006, Sivia_2006, Pahud_2006, Trotta_2007, Trotta_2007b, Gelman_2014, Leung_2017}.
+However, performing such an analysis in practice is often infeasible with the tools used to analyse experimental data sets, e.g., MCMC and nested sampling, due to the aforementioned computational cost.}
+Hence, Fisher forecasts~\citep{Fisher_1922}\change{, for parameter constraint estimates, or Savage–Dickey forecasts~\citep{Dickey_1971, Trotta_2007b}, for model comparison projections,} are commonly employed across astronomy and astrophysics~\citep{Tegmark_1997, DETF, Trotta_2007b, 2007_Seo, Vallisneri_2008, More_2013, DiDio_2014, Zhai_2017, Bonvin_2018, Simons, Euclid_2020, dAssignies_2023, Mason_2023} to cover the potential data space and investigate how conclusions vary.
+Unfortunately, the Gaussianity assumption \change{these} forecasts rely upon does not always hold, limiting their reliability~\citep[e.g.][]{Perotto_2006, Wolz_2012}.
+Furthermore, \change{Savage–Dickey} forecasts can only be used for nested models (when one of the models is a special case of the other), limiting their applicability~\citep{Trotta_2007}. 
 
 
-In this letter, we argue traditional Bayesian forecasting techniques break a central tenant of Bayesian statistics by drawing conclusions based on a small number of fiducial parameter values. 
-To remedy this, we propose the conclusions of traditional Bayesian forecasts should be marginalized over uncertain parameters and noise realizations in a fully Bayesian forecast. 
-However, we find current forecasting techniques too slow for such forecasts to be feasible except for rare specific cases.
-We thus propose an Evidence Network~\citep{EN} based methodology, which allows for expedient fully Bayesian forecasts on any scientific question formulated as a condition on the Bayes ratio between two models.
+
+\change{Current} \change{analysis methodologies for Bayesian model comparison are thus either} too slow for \change{fully Bayesian} forecasts to be feasible \change{e.g., nested sampling, or only applicable in specific cases, e.g., Savage–Dickey forecasts}.
+\change{In this letter, we propose utilizing simulation-based inference in the form of Evidence Networks~\citep{EN} to overcome the constraints of current methods~\citep{Mukherjee_2006, Trotta_2007b}, enabling} expedient, fully Bayesian forecasts on any scientific question formulated as a condition on the Bayes ratio between two models.
 Such questions include whether a signal can be detected from within noise, whether two competing theories can be distinguished by expected data, or at what sensitivity level will a piece of additional physics be required within a model?
 We then demonstrate the technique by finding the \textit{a priori} chance of detection of the global 21-cm signal by a REACH-like experiment~\citep{REACH}, an analysis that would have been computationally impracticable using traditional methods.
 
@@ -164,7 +187,8 @@ which can be compared to a statistical threshold to determine if one model is si
 
 
 With the mathematical notation of Bayesian analysis established, we can return to the central topic of this letter; forecasts.
-A traditional Bayesian forecast for whether a proposed experiment could distinguish between two models goes through the following steps. 
+\change{For many scientific applications~\citep{Mukherjee_2006, Trotta_2007}, the question of interest is best posed as} whether a proposed experiment could distinguish between two \change{competing} models.
+\change{A traditional Bayesian forecast of such question would go} through the following steps. 
 First, the models and corresponding likelihoods are established.
 Then, mock data is simulated from one of the models by choosing some fiducial parameter values $\Tilde{\theta}$, adding noise $\eta$, and experimental effects.
 $\Z$ is evaluated for each model treating the mock data as you would actual observations from which $\br$ (or equivalently $P(M_{\rm i}| D)$) is calculated. 
@@ -176,7 +200,7 @@ However, $\br$ is conditional on the fiducial parameters chosen to generate the 
 \begin{equation}~\label{eqn:partially_bayesian_forecast}
     \br\left(\Tilde{\theta}, \eta\right) > \br_{\rm crit}.
 \end{equation}
-Using such a criterion presents two major issues. 
+Using such a criterion presents two major issues \change{(previously identified and discussed in \citet{Mukherjee_2006} and \citet{Trotta_2007b})}. 
 Firstly the result is dependent on random noise $\eta$, leading to differences in conclusion purely based on chance.
 Secondly, these conclusions stem from a single point in the parameter space $\Tilde{\theta}$, leading to differences based on the choice of fiducial model (anathema to Bayesian statistics).
 A central tenant of Bayesian statistics being that particular sets of parameter values, even those that maximize the likelihood or posterior, have zero measure and thus are vanishingly unlikely and should not be used to draw conclusions.
@@ -201,15 +225,20 @@ to perform a fully Bayesian forecast on drawing said conclusion.
 In addition, \cref{eqn:fully_bayesian_condition} can be modified to produce fully Bayesian forecasts for a broader range of scientific questions. 
 For example, when appropriate to the question being posed, the marginalization should be performed over the model prior as well (this is equivalent to marginalizing over the predictive posterior odds distribution introduced in \citet{Trotta_2007b}), or over conditional priors. 
 Thus, fully Bayesian forecasts can in theory be used to give principled and interpretable answers to a range of forecasting questions.
-However, performing the average over the parameters and noise (and potentially models) in practice would require thousands or millions of mock data sets.
-In traditional Bayesian analysis, this would, in turn, require thousands or millions of evidence evaluations, which with current state-of-the-art methods, e.g.\ Nested Sampling~\citep{Skilling_2004, NS_Primer}, would be prohibitively expensive even for simple problems without dedicated supercomputing time, if at all.
 
-The computational limitations of traditional Bayesian forecasts have led to widespread usage of Fisher forecasts to perform forecasts over uncertain data spaces.
-Fisher forecasts can provide from a small number of likelihood evaluations analytic parameter posteriors~\citep[e.g.][]{Tegmark_1997} and for nested models the Bayes ratio~\citep{Dickey_1971, Verdinelli_1995, Trotta_2007}.
+
+However, performing the above average over the parameters and noise (and potentially models) in practice would require thousands or millions of mock data sets \change{and, in turn, thousands or millions of Bayes ratio calculations.
+\citet{Mukherjee_2006} proposed using Nested Sampling~\citep{Skilling_2004, NS_Primer} to calculate the $\br$ values for fully Bayesian model comparison forecasts, but in practice, this is typically}
+prohibitively \change{computationally} expensive\change{,} even for simple problems.
+\change{To circumvent these computational limitations \citet{Trotta_2007} proposed using the Savage–Dickey density ratio~\citep{Dickey_1971, Verdinelli_1995} to rapidly evaluate $\br$ values between nested models, facilitating a fully Bayesian forecast of whether the \textit{Planck} satellite could detect a deviation in the scalar spectral index of primordial perturbations $n_{\rm s}$ from 1.
+The use of the Savage–Dickey density ratio for model comparison forecasts is analogous to the}
+widespread usage of Fisher forecasts to perform \change{parameter constraint} forecasts over uncertain data spaces.
+\change{Both techniques utilize the analytic results available for linear models and Gaussian likelihoods to calculate approximate analytic parameter posteriors~\citep[e.g.][]{Tegmark_1997} or the Bayes ratio between models.}
 However, the reliability of these results is conditional on the accuracy of the implicit linearization and Gaussianity assumptions~\citep[see][]{Perotto_2006, Wolz_2012}.
-Thus, if we knew the assumptions of Fisher forecasts to hold well and the forecasting question at hand was between nested models, Fisher forecasts could form the basis of a fully Bayesian forecast (such an analysis would be reminiscent of \citet{Trotta_2007b}).
-However, these requirements would significantly limit the applicability of such a methodology. 
-Reliable and widely applicable fully Bayesian forecasts will hence require a novel methodology that maintains the expedience of Fisher forecasts but is applicable to non-nested models and avoids the same assumptions.
+\change{Furthermore, usage of the Savage–Dickey density ratio requires the models being compared to be nested.
+Thus, if we had nested models, an explicit likelihood, and knew the above assumptions to hold well the Savage–Dickey density ratio would suffice to perform fully Bayesian model comparison forecasts.}
+However, these requirements significantly limit the \change{usage} of such a methodology. 
+Reliable and widely applicable fully Bayesian forecasts will hence require a novel methodology that maintains the expedience of \change{Savage–Dickey} forecasts but is applicable to non-nested models and avoids the same assumptions.
 
 
 
@@ -226,16 +255,15 @@ As established in the previous section, efficient evaluation of $\br$ for a wide
 Since evaluating a neural network on a GPU is orders of magnitude faster than direct Bayesian evidence calculation techniques, utilizing evidence networks may circumvent this computational limitation. 
 We thus propose an alternative evidence-network-based methodology for performing fully Bayesian forecasts:
 \begin{itemize}
-    \item First, create simulators of mock data from the two competing models (including experimental considerations such as noise).
-    \item Then using the two simulators generate a training set and validation set of labelled mock data, and train the evidence network.
-    \item Validate the evidence network using a blind coverage test~\citep{EN} and, if possible, compare its output to a sample of $\br$ values calculated from traditional Bayesian techniques.
+    \item First, create simulators of mock data from the two competing models (including experimental considerations such as noise \change{or selection effects}).
+    \item Then, using the two simulators, generate a training set and validation set of labelled mock data and train the evidence network.
+    \item Validate the evidence network using a blind coverage test~\citep{EN} \change{to verify the network's accuracy} and, if possible, \change{also} compare its output to a sample of $\br$ values calculated from traditional Bayesian techniques. \change{This step is essential, as for data manifolds too complex to be classified by the chosen network architecture, or for insufficient training data sets, the converged network will not correspond to an accurate calculation of $\br$\footnote{\change{In the example discussed in the next section we found a blind coverage test revealed the network was consistently underconfident (e.g., conservative) in these two scenarios.}}. If validation indicates the network has not accurately converged, the network architecture or training will need to be refined and the previous steps repeated.}
     \item Finally, evaluate \cref{eqn:fully_bayesian_condition}, or equivalent, using the network and previously developed simulators to evaluate $\br$ over $\prior$ and $\eta$ (and potentially $M_{\rm i}$) efficiently. 
 \end{itemize}
 We anticipate this approach to be highly performant relative to the traditional Bayesian approach since each $\br$ evaluation no longer requires an exploration of the parameter space.
-Furthermore, our methodology only needs efficient mock data simulators.
-As a result, it can be applied in simulation-based inference contexts where no closed-form likelihood exists, making it more widely applicable. 
-
-
+Furthermore, our methodology \change{does not require the models used to be nested or to satisfy the restrictive assumptions of the Savage–Dickey forecasting method; and} only needs efficient mock data simulators \change{rather than explicit likelihoods}.
+As a result, it can \change{even} be applied in simulation-based inference contexts where no closed-form likelihood exists.
+\change{We thus also anticipate it to be} widely applicable. 
 
 
 \textit{An Application to Cosmology.}---
@@ -253,23 +281,33 @@ Since a significant signal detection can be determined to occur when $\br$ betwe
 
 
 
-Hence, following our fully Bayesian forecasting methodology outlined above, we began by constructing the two mock data simulators. 
+Hence, following our fully Bayesian forecasting methodology outlined above, we began by constructing the two mock data simulators\change{, one that modelled a global 21-cm signal and one without}. 
 We imagined a REACH-like global 21-cm signal experiment with frequency-band covering redshift $7.5$ to $28.0$ and an analysis spectral resolution of $1$\,MHz.
-For simplicity, we supposed all foregrounds and systematics are marginalized away leaving a noisy measurement of the global 21-cm signal.
-We modelled the residual noise as Gaussian white noise with magnitude $\sigma_{\rm noise} = 0.079$\,K~\footnote{As the noise scales with spectral resolution $\Delta \nu$ as $1/\sqrt{\Delta \nu}$ this is equivalent to $0.250$\,K noise at a resolution of $0.1$\,MHz, the \textit{pessimistic} case projected for REACH~\citep{REACH}.}.
+\change{For both simulators, we used the physically motivated galactic and ionospheric foreground model from \citet{Hills_2018}, and assumed} Gaussian white noise with magnitude $\sigma_{\rm noise} = 0.015$\,K\footnote{As the noise scales with spectral resolution $\Delta \nu$ as $1/\sqrt{\Delta \nu}$ this is equivalent to \change{$0.047$\,K} noise at a resolution of $0.1$\,MHz, which lies \change{between the \textit{pessimistic} and \textit{expected}} case projected for REACH~\citep{REACH}.}.
 For our global 21-cm signal model, we used \textsc{globalemu}~\citep{GLOBALEMU}, an emulator of a more computationally costly semi-numerical simulation code~\citep[e.g.,][]{Visbal_2012, Fialkov_2014, Reis_2020}. 
-This model has seven parameters, star formation efficiency $f_{*}$, minimum circular virial velocity $V_{\rm c}$, X-ray emission efficiency $f_{\rm X}$, optical depth to the cosmic microwave background $\tau$, exponent $\alpha$ and lower-cutoff $E_{\rm min}$ of the X-ray spectral energy distribution, and the root-mean free path of ionizing photons $R_{\rm mfp}$.
-We specified our \textit{a priori} knowledge of these parameters through our priors listed in \cref{tab:priors}. 
-These priors are broad uniform or log-uniform distributions due to the uncertainty in these parameters, except for $\tau$ which we use a truncated Gaussian prior based on the \textit{Planck} 2018 measurement of $\tau$~\citep{Planck_VI}.
-By combining noise generators, \textsc{globalemu}, and samplers over our priors, we constructed simulators of mock global 21-cm signal data from a model with only noise (noise-only) and a model with noise plus a signal (noisy-signal).  
+This model has seven parameters, star formation efficiency $f_{*}$, minimum circular virial velocity $V_{\rm c}$, X-ray emission efficiency $f_{\rm X}$, optical depth to the cosmic microwave background $\tau$, exponent $\alpha$ and lower-cutoff $E_{\rm min}$ of the X-ray spectral energy distribution, and the \change{maximum} root-mean free path of ionizing photons $R_{\rm mfp}$.
+We specified our \textit{a priori} knowledge of these parameters \change{and the foreground parameters} through our priors listed in \cref{tab:priors}. 
+The \change{astrophysical} priors \change{used} are uniform or log-uniform distributions \change{centred on theoretically expected values}, except for $\tau$, which we \change{used} a truncated Gaussian prior based on the \textit{Planck} 2018 \change{posterior on} $\tau$~\citep{Planck_VI}.
+\change{For the foreground parameter priors, we used physically restricted priors following \citet{Hills_2018}.}
+\change{Thus by} combining noise generators, \change{our analytic foreground model,} \textsc{globalemu}, and samplers over our priors, we constructed simulators of mock global 21-cm signal data from a model with only noise \change{and foreground} (\change{no-signal}) and a model with noise\change{, foreground, and }signal (\change{with-signal}).  
+\change{Our two competing models thus have moderate dimensionalities (5 and 12) and depend non-linearly on their parameters, leading to complex data manifolds. 
+In addition, this particular classification task is made more challenging due to the large shared foreground component of the two models being $10^4$ to $10^5$ times larger than the signal.}
+
+
 
 
 \begin{table}
- \caption{Priors on our 21-cm global signal parameters. To keep the parameter values within the training parameter ranges of \textsc{globalemu} we use a truncated Gaussian prior on $\tau$ derived from the Planck 2018 measurements rather than a Gaussian prior.}
+ \caption{Priors on our \change{foreground and} 21-cm global signal parameters. To keep the parameter values within the training parameter ranges of \textsc{globalemu} we use a truncated Gaussian prior on $\tau$ derived from the Planck 2018 measurements rather than a Gaussian prior.}
  \label{tab:priors}
  \begin{ruledtabular}
  \begin{tabular}{cccccc}
   Parameter & Prior Type & Min & Max & Mean & Std. \\
+\colrule
+  \change{$d_{\rm 0}$ (K)} &  \change{Uniform}  & \change{1500} & \change{2000} & \change{-} & \change{-} \\
+  \change{$d_{\rm 1}$} &  \change{Uniform}  & \change{-1.0} & \change{1.0} & \change{-} & \change{-} \\
+  \change{$d_{\rm 2}$} &  \change{Uniform}  & \change{-0.05} & \change{0.05} & \change{-} & \change{-} \\
+  \change{$\tau_{e}$}  &  \change{Uniform}  & \change{0.005} & \change{0.200} & \change{-} & \change{-} \\
+  \change{$T_{e}$ (K)}  &  \change{Uniform}  & \change{200} & \change{2000} & \change{-} & \change{-} \\
 \colrule
   $f_{*}$ & Log Uniform & 0.0001 & 0.5 & - & - \\
   $V_{\rm c}$ (km\,s$^{-1}$) & Log Uniform & 4.2 & 30.0 & - & - \\
@@ -283,32 +321,39 @@ By combining noise generators, \textsc{globalemu}, and samplers over our priors,
 \end{table}
 
 
-We generated 2,000,000 (200,000) mock data sets from each simulator to form our training (validation) set.  
-Our evidence network was implemented in \textsc{tensorflow}~\citep{tensorflow}, using the same architecture and optimizer as \citet{EN} (detailed in their appendix) and a $\alpha = 2$ l-POP exponential loss function.
-The network was trained with early-stopping for 20 epochs using a batch size of 1000, after which a blind coverage test confirmed the network had converged.
-We further validated our network by comparing whether a significant detection would be concluded based on the network $\br$ values and $\br$ computed using \textsc{polychord}~\citep{POLYCHORD_I, POLYCHORD_II}. 
-For a signal detection threshold of 3\,$\sigma$ (5\,$\sigma$), corresponding to $\log(\br_{\rm crit}) = 5.91$ ($\log(\br_{\rm crit}) = 14.4$), we found the two methods came to the same conclusion for 99.2\% (98.3\%) of 1000 mock data sets from our noisy-signal model. 
+\change{To train our evidence network, we then} generated \change{32,000,000} (\change{12,800,000}) mock data sets from each simulator to form our training (validation) set.  
+Our evidence network was implemented in \textsc{tensorflow}~\citep{tensorflow}, \change{and consisted of an initial Cholesky whitening transform~\citep{Kessy_2015} followed by dense hidden layers of size 256-256-64-64-64-64-64-64-1, with batch normalization and a ReLU activation functions on all layers except for the output node, and an additive skip connection between the third and sixth layers to ease training.
+We used the $\alpha = 2$ l-POP exponential loss function recommended for evident networks by \citet{EN} and the Adam optimizer with an initial learning rate of $10^{-3}$, decay steps of $10^5$, and decay rate of 0.95.
+}
+The network was trained with early-stopping for \change{900} epochs using a batch size of \change{32,768}.
+
+
+\change{To validate the network had converged to an accurate prediction of $\br$, we performed a blind coverage test as outlined in \citet{EN}.
+This test consists of using the network to predict the posterior model probabilities for a range of test data sets, then binning the data sets by these probabilities. 
+If the network has correctly converged, the model probability corresponding to each bin should equal the proportion of the data sets in the bin generated from said model, which we indeed find to be the case for our testing set composed of \change{1,000,000} mock data sets generated from each model.}
+\change{Furthermore, as in this case, we can construct an explicit likelihood, we additionally validated our network and methodology by comparing whether a significant detection would be concluded based on the network $\br$ values and $\br$ computed using \textsc{polychord}~\citep{POLYCHORD_I, POLYCHORD_II}.} 
+For a signal detection threshold of 3\,$\sigma$ (5\,$\sigma$)\footnote{\change{These $\sigma$ thresholds are translated to $\br_{\rm crit}$ values via equation~\eqref{eqn:model_posterior_absolute}, and requiring that the posterior probability of the model with no signal is less than the corresponding $p$ values of $2.70\times10^{-3}$ or $5.73\times10^{-7}$.}}, corresponding to $\log(\br_{\rm crit}) = 5.91$ ($\log(\br_{\rm crit}) = 14.4$), we found the two methods came to the same conclusion \change{on whether a signal was detected} for \change{96.6}\% (\change{95.1}\%) of 1000 mock data sets from our noisy-signal model\change{, showing good agreement.}
 
 
 
 Finally, we evaluated \cref{eqn:fully_bayesian_distinguish} using our evidence network and 1,000,000 sets of noisy-signal model mock data.
-Ultimately, we found the expected chance of the experiment detecting the global 21-cm signal at a statistical significance of 3\,$\sigma$ (5\,$\sigma$) was 65.2\% (52.3\%).
-This marginal favouring of a detection of the 21-cm signal, suggests the $0.079$\,K sensitivity at 1\,MHz resolution considered here is indicative of the minimum sensitivity global signal experiments such target.
+Ultimately, we found the expected chance of the experiment detecting the global 21-cm signal at a statistical significance of 3\,$\sigma$ (5\,$\sigma$) was \change{46.0}\% (\change{32.4}\%).
+\change{This approximately $50$\% change of a 21-cm signal detection at $>3$\,$\sigma$ confidence}, suggests the $0.015$\,K sensitivity at 1\,MHz resolution considered here is indicative of the minimum sensitivity global signal experiments such target.
 
 Additionally, our 1,000,000 $\br$ evaluations allow for a broad range of further analyses at little to no additional computation cost. 
 Instead of performing the average over $\pi$ in \cref{eqn:fully_bayesian_distinguish}, we can marginalize over conditional priors with one or two parameters fixed, giving insight into under which early Universe astrophysical scenarios we would expect to detect the 21-cm signal.
 These conditional detection probabilities are depicted in \cref{fig:headline_plot} for the parameters with which strong variation in detection probability was seen, $f_{*}$, $f_{\rm X}$, and $\tau$. 
-We find the detection of the 21-cm signal is more likely for high star formation efficiencies, X-ray efficiencies below a threshold of $\sim 1$, and lower optical depths to reionization. 
-With an almost 100\% chance of a 3\,$\sigma$ detection for $f_{*} >0.001$ and $f_{\rm X} < 1$. 
+We find the detection of the 21-cm signal is more likely for high star formation efficiencies, X-ray efficiencies \change{around the theoretically expected value of 1}, and \change{higher} optical depths to reionization. 
+With an almost 100\% chance of a 3\,$\sigma$ detection for \change{$f_{*} >0.01$ and $f_{\rm X} = 1$}, \change{and an effectively 0\% chance of  a 3\,$\sigma$ detection for $f_{*} < 0.001$ or $f_{\rm X} > 30$}. 
 This strong variation in definitive detection chances retroactively provides further motivation for fully Bayesian forecasts as we see the conclusion drawn would be highly sensitive to the fiducial global 21-cm signal parameters chosen for a traditional Bayesian forecast. 
 
 \begin{figure}
-\includegraphics{detectability_triangle_3_sigma_noise_0.0790_K.pdf}
-    \caption{Triangle plot depicting the probability of a global 21-cm signal detection at $\geq 3$\,$\sigma$ statistical significance, by an experiment covering redshift $7.5$ to $28.0$, with frequency resolution $\Delta \nu = 1$\,MHz, and residual white noise of \mbox{$\sigma_{\rm noise} = 0.079$\,K}.
+\includegraphics{figures/detectability_triangle_3_sigma_noise_0.0150_K.pdf}
+    \caption{Triangle plot depicting the probability of a global 21-cm signal detection at $\geq 3$\,$\sigma$ statistical significance, by an experiment covering redshift $7.5$ to $28.0$, with frequency resolution $\Delta \nu = 1$\,MHz, \change{assuming the \citet{Hills_2018} physical foreground model} and white noise of \change{\mbox{$\sigma_{\rm noise} = 0.015$\,K}}.
 The diagonal shows the total probability of a detection marginalized over noise realizations and the parameter space except for one fixed parameter, and the below diagonal is the equivalent with two fixed parameters. 
-The total detection probability with no parameters fixed was $65.2$\%.
-$V_{\rm c}$, $\alpha$, $E_{\rm min}$, and $R_{\rm mfp}$ are not shown because the probability of detection was found to vary little with them. 
-We find high $f_{\rm *}$, $f_{\rm X} \lesssim 1$, and low $\tau$ values increase the chance of a 21-cm signal detection, with $f_{\rm X}$ the most impactful.  
+The total detection probability with no parameters fixed was \change{$46.0$}\%.
+$V_{\rm c}$, $\alpha$, $E_{\rm min}$, and $R_{\rm mfp}$ are not shown because the probability of detection was found to vary \change{only weakly} with them. 
+We find high $f_{\rm *}$, \change{$f_{\rm X} \approx 1$}, and \change{high} $\tau$ values increase the chance of a 21-cm signal detection, with \change{$f_{\rm *}$} the most impactful.  
 For different parameter combinations, we find detection probabilities varying from $\sim 0$\% to $\sim 100$\%, illustrating the need for fully Bayesian forecasts as the conclusion of detectability varies strongly over the \textit{a priori} uncertain parameter space. }
 \label{fig:headline_plot}
 \end{figure}
@@ -316,33 +361,34 @@ For different parameter combinations, we find detection probabilities varying fr
 
 
 There are a myriad of further analyses we could perform with our methodology. 
-For example, we could study the evolution of the detection probability against the significance threshold, noise level or experiment bandwidth. 
+For example, we could study the evolution of the detection probability against the \change{experiment} noise level or bandwidth\change{, which could, in turn, help inform experimental design.}
 Additionally, we could consider the functional distribution of the detected and non-detected 21-cm global signals to gain insight into what differentiates these two categories.
 Or alternatively, we could investigate how the chances of a 21-cm global signal detection have changed in light of the parameter constraints from the HERA 21-cm power spectrum limits~\citep{HERA_theory_22, HERA_obs_23}, or the SARAS~3 null detection~\citep{SARAS3, Bevins_2022}.
-However, we shall leave these analyses to future work since the focus of this letter is on the method and its feasibility rather than particular scientific problems. 
+\change{Furthermore, if this were a problem where particular parameter(s) values were of special interest (e.g., the minimum sum of the neutrino masses permitted by particle physics) this methodology also allows for determining detection chance with the parameter(s) fixed to that value while still marginalizing over noise and nuisance parameters.}
+However, we shall leave \change{such} analyses to future work since the focus of this letter is on the method and its feasibility rather than particular scientific problems. 
 
 
 
 Let us return now to the computational performance of our method.
-The training data generation, network training,  forecast data generation, network $\br$ evaluations, and plotting of \cref{fig:headline_plot}, took a combined total of 0.170\,GPU hours~\footnote{On an NVIDIA A100-SXM-80GB GPU that was part of a \href{https://docs.hpc.cam.ac.uk/hpc/user-guide/a100.html}{CSD3 HPC Ampere GPU node}.}.
-Conversely, the 1000 \textsc{polychord} evaluations of $\br$ as part of our validation process took a total of 778\,CPU hours~\footnote{On 76 Intel Ice Lake CPUs that form a \href{https://docs.hpc.cam.ac.uk/hpc/user-guide/icelake.html}{CSD3 HPC Ice Lake node}.}, from which we can estimate the 1,000,000 $\br$ evaluations used in our fully Bayesian forecast would have required 778,000\,CPU hours using traditional methods. 
+The training data generation, network training,  forecast data generation, network $\br$ evaluations, and plotting of \cref{fig:headline_plot}, took a combined total of \change{5.54}\,GPU hours\footnote{On an NVIDIA A100-SXM-80GB GPU that was part of a \href{https://docs.hpc.cam.ac.uk/hpc/user-guide/a100.html}{CSD3 HPC Ampere GPU node}.}.
+Conversely, the 1000 \textsc{polychord} evaluations of $\br$ as part of our validation process took a total of \change{45,000}\,CPU hours\footnote{On 76 Intel Ice Lake CPUs that form a \href{https://docs.hpc.cam.ac.uk/hpc/user-guide/icelake.html}{CSD3 HPC Ice Lake node}.}, from which we can estimate the 1,000,000 $\br$ evaluations used in our fully Bayesian forecast would have required \change{45,000,000}\,CPU hours using traditional methods. 
 While it is not meaningful to directly compare GPU to CPU hours we can compare the costs of those hours.
 On the cluster we utilized GPU hours are charged at 50 times the rate of CPU hours. 
-Thus our method gives a cost-weighted performance improvement of $10^{5.0}$. 
+Thus our method gives a cost-weighted performance improvement of \change{$10^{5.2}$}. 
 Since this performance gain was for a single problem, and our implementation was not optimized, this level of performance gain cannot be assumed to apply universally. 
 However, it is indicative our methodology is highly performant compared to traditional techniques and, as we have directly demonstrated, facilitates analyses that were previously computationally prohibitively expensive. 
 
 
 \textit{Conclusions.}---
-We have argued that to arrive at accurate and interpretable predictions the conclusions of scientific forecasts should be marginalized over any uncertain model parameters and noise realizations.
-However, such fully Bayesian forecasts are computationally infeasible with traditional methods. 
+We have argued\change{, like \citet{Mukherjee_2006} and \citet{Trotta_2007b} before us,} that to arrive at accurate and interpretable predictions\change{,} the conclusions of scientific forecasts should be marginalized over any uncertain model parameters and noise realizations.
+However, such fully Bayesian forecasts are computationally infeasible with traditional methods \change{for model comparison forecasts}. 
 We thus propose a novel methodology for performing fully Bayesian forecasts based on Evidence Networks.
 
-To illustrate our method and the insights that can be gained from fully Bayesian forecasts, we applied it to determine the chances of a REACH-like experiment detecting the global 21-cm signal.
-For a frequency resolution of $1$\,MHz and a noise level of $\sigma_{\rm noise} = 0.079$\,K, we find a 65.2\% (52.3\%) chance of detection at 3\,$\sigma$ (5\,$\sigma$). 
+To illustrate our method and the insights that can be gained from fully Bayesian forecasts, we applied it to determine the chances of a REACH-like experiment detecting the global 21-cm signal \change{from beneath foregrounds and noise}.
+For a frequency resolution of $1$\,MHz and a noise level of \change{$\sigma_{\rm noise} = 0.015$\,K}, we find a \change{46.0}\% (\change{32.4}\%) chance of detection at 3\,$\sigma$ (5\,$\sigma$). 
 Thus suggesting this noise level is indicative of the minimum sensitivity global 21-cm signal experiments should target. 
 Additionally, our methodology allows us to produce triangle plots of how this chance of detection varies when one or two model parameters are fixed, at no extra computational cost. 
-For this example problem, we find a cost-weighted speed-up of $10^{5.0}$ using our approach compared to a traditional nested-sampling-based method that would have taken $778,000$\,CPU hours.
+For this example problem, we find a cost-weighted speed-up of \change{$10^{5.2}$} using our approach compared to a traditional nested-sampling-based method that would have taken \change{$45,000,000$}\,CPU hours.
 
 The method we propose can be applied to any forecasting question which can be formulated as a condition on the Bayes ratio between two models. 
 This includes: if a signal can be detected from within noise (e.g.\ gravitational waves~\citep{CosmicExplorer}, or the 21-cm signal~\citep{Furlanetto_2006}); whether two competing theories can be distinguished by anticipated data (e.g.\ MOND~\citep{MOND} or General Relativity~\citep{GR}); or if the inclusion of novel physics in a model will be necessary (e.g.\ neutrinos in CMB experiment analysis~\citep{Simons}). 
@@ -351,14 +397,14 @@ As a result, this methodology should allow for reliable and efficient fully Baye
 
 Since the proposed methodology is simulation-based and has a low computational cost, we anticipate it will be particularly suited to performing forecasts for a range of potential experimental configurations. 
 Thus allowing for the optimization of experimental configurations to minimize cost or maximize the chance of the detection of new physics. 
-To facilitate the application of this methodology by others we make \href{https://github.com/ThomasGesseyJones/FullyBayesianForecastsExample}{public on GitHub all codes and data} used in the writing of this letter. 
+To facilitate the application of this methodology by others\change{,} we make \href{https://github.com/ThomasGesseyJones/FullyBayesianForecastsExample}{public} on GitHub all codes and data used in the writing of this letter.
 
 
 
 \begin{acknowledgments}
 We would like to express our gratitude to Harry Bevins for several insightful conversations concerning this work. 
 The authors would like to thank the Science and Technology Facilities Council (UK) for their support of TGJ through grant number ST/V506606/1, and the Royal Society for their support of WJH  through a Royal Society University Research Fellowship. 
-This work was performed using resources provided by the Cambridge Service for Data Driven Discovery (CSD3) operated by the University of Cambridge Research Computing Service (\href{www.csd3.cam.ac.uk}{www.csd3.cam.ac.uk}), provided by Dell EMC and Intel using Tier-2 funding from the Engineering and Physical Sciences Research Council (capital grant EP/T022159/1), and DiRAC funding from the Science and Technology Facilities Council (\href{www.dirac.ac.uk}{www.dirac.ac.uk}).
+\change{This work was performed using the Cambridge Service for Data Driven Discovery (CSD3), part of which is operated by the University of Cambridge Research Computing on behalf of the STFC DiRAC HPC Facility (www.dirac.ac.uk). The DiRAC component of CSD3 was funded by BEIS capital funding via STFC capital grants ST/P002307/1 and ST/R002452/1 and STFC operations grant ST/R00689X/1. DiRAC is part of the National e-Infrastructure.}
 For the purpose of open access, the author has applied a Creative Commons Attribution (CC BY) licence to any Author Accepted Manuscript version arising from this submission.
 \end{acknowledgments}
 
