@@ -7,9 +7,9 @@ Overview
 
 :Name: Fully Bayesian Forecast Example
 :Author: Thomas Gessey-Jones
-:Version: 0.2.2
+:Version: 1.0.0
 :Homepage: https://github.com/ThomasGesseyJones/FullyBayesianForecastsExample
-:Letter: https://ui.adsabs.harvard.edu/abs/2023arXiv230906942G
+:Letter: https://ui.adsabs.harvard.edu/abs/2024PhRvD.109l3541G/abstract
 
 .. image:: https://img.shields.io/badge/python-3.8-blue.svg
    :target: https://www.python.org/downloads/
@@ -24,7 +24,7 @@ Overview
 
 Example of a fully Bayesian forecast performed using an `Evidence Network <https://ui.adsabs.harvard.edu/abs/2023arXiv230511241J/abstract>`__.
 This code also replicates the analysis of
-`Gessey-Jones et al. (2023) <https://ui.adsabs.harvard.edu/abs/2023arXiv230906942G>`__.
+`Gessey-Jones et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024PhRvD.109l3541G/abstract>`__.
 This repository thus serves the dual purposes of providing an example code base others
 can modify to perform their own fully Bayesian forecasts and also providing a
 reproducible analysis pipeline for the letter.
@@ -113,7 +113,7 @@ scripts can be run from the terminal using the following commands:
     python visualize_forecasts.py
 
 to run with the default noise level of 15 mK and replicate the
-analysis from `Gessey-Jones et al. (2023) <https://ui.adsabs.harvard.edu/abs/2023arXiv230906942G>`__.
+analysis from `Gessey-Jones et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024PhRvD.109l3541G/abstract>`__.
 Alternatively you can pass
 the scripts a command line argument to specify the experiments noise level in K. For example
 to run with a noise level of 100 mK you would run the following commands:
@@ -140,7 +140,7 @@ The various figures produced in the analysis are stored in the
 figures_and_results directory alongside the timing_data to assess the
 performance of the methodology and some summary statistics of the evidence
 networks performance. The figures and data generated in the
-analysis for `Gessey-Jones et al. (2023) <https://ui.adsabs.harvard.edu/abs/2023arXiv230906942G>`__ are provided in this
+analysis for `Gessey-Jones et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024PhRvD.109l3541G/abstract>`__ are provided in this
 repository for reference, alongside the figures generated for an earlier
 version of the letter which did not model foregrounds.
 
@@ -149,31 +149,28 @@ Licence and Citation
 
 The software is free to use on the MIT open source license.
 If you use the software for academic purposes then we request that you cite
-the `letter <https://ui.adsabs.harvard.edu/abs/2023arXiv230906942G>`__ ::
+the `letter <https://ui.adsabs.harvard.edu/abs/2024PhRvD.109l3541G/abstract>`__ ::
 
-  Gessey-Jones, T. and W. J. Handley. “Fully Bayesian Forecasts with Evidence
-  Networks.” (2023). arXiv:2309.06942
+  Gessey-Jones, T. and W. J. Handley. “Fully Bayesian forecasts with evidence 
+  networks.” (June 2024). Physical Review D, Volume 109, Issue 12, 123541
 
 If you are using Bibtex you can use the following to cite the letter
 
 .. code:: bibtex
 
-  @ARTICLE{2023arXiv230906942G,
-         author = {{Gessey-Jones}, T. and {Handley}, W.~J.},
-          title = "{Fully Bayesian Forecasts with Evidence Networks}",
-        journal = {arXiv e-prints},
-       keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, Astrophysics - Cosmology and Nongalactic Astrophysics, General Relativity and Quantum Cosmology},
-           year = 2023,
-          month = sep,
-            eid = {arXiv:2309.06942},
-          pages = {arXiv:2309.06942},
-            doi = {10.48550/arXiv.2309.06942},
-  archivePrefix = {arXiv},
-         eprint = {2309.06942},
-   primaryClass = {astro-ph.IM},
-         adsurl = {https://ui.adsabs.harvard.edu/abs/2023arXiv230906942G},
-        adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-  }
+  @ARTICLE{2024PhRvD.109l3541G,
+       author = {{Gessey-Jones}, T. and {Handley}, W.~J.},
+        title = "{Fully Bayesian forecasts with evidence networks}",
+      journal = {\prd},
+         year = 2024,
+        month = jun,
+       volume = {109},
+       number = {12},
+          eid = {123541},
+        pages = {123541},
+          doi = {10.1103/PhysRevD.109.123541},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2024PhRvD.109l3541G},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}}
 
 
 Note some of the packages used (see below) in this code have their own licenses that
